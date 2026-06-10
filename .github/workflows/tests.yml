@@ -22,3 +22,18 @@ jobs:
 
       - name: Run tests
         run: python -m pytest -q
+
+      - name: E2E - CSV run
+        run: python src/main.py --assumptions assumptions.sample.yaml --output ./output
+
+      - name: E2E - Generate sample PDF
+        run: python scripts/make_sample_pdf.py --output data/sample_rentroll_simple.pdf
+
+      - name: E2E - PDF run
+        run: python src/main.py --assumptions assumptions.sample.yaml --rent-roll-pdf data/sample_rentroll_simple.pdf --output ./output
+
+      - name: Verify output files exist
+        run: |
+          test -f output/missing_info.md
+          test -f output/revenue_analysis.xlsx
+          test -f output/extraction_log.json
