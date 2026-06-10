@@ -8,3 +8,4 @@ openpyxl>=3.1,<4
 pdfplumber>=0.11,<1.0      # core PDF extraction; 0.x can break, so cap it
 reportlab>=4.0,<5          # synthetic PDF generation
 jsonschema>=4.0,<5         # extraction_log schema validation (tests / optional checks)
+pytest>=8.0,<9             # test runner (required by CI)
