@@ -1,0 +1,97 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.com/revenue-kun/extraction_log.schema.json",
+  "title": "revenue-kun extraction_log",
+  "description": "収益還元クン (revenue-kun) が出力する extraction_log.json の固定スキーマ。本ツールは不動産鑑定評価ではなく、金額は『収益試算値』(indicated_value) であり『収益価格』ではない。",
+  "type": "object",
+  "required": [
+    "input_files",
+    "rent_roll_pdf",
+    "extracted_units_count",
+    "missing_required_count",
+    "missing_optional_count",
+    "missing_required_items",
+    "missing_optional_items",
+    "gpi",
+    "noi",
+    "indicated_value",
+    "output_files",
+    "executed_at"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "tool": { "type": "string" },
+    "version": { "type": "string" },
+    "phase": { "type": "string" },
+    "disclaimer": { "type": "string" },
+    "extraction_method": { "type": "string", "enum": ["dummy", "pdf"] },
+    "input_files": {
+      "type": "object",
+      "required": ["assumptions", "rent_roll"],
+      "properties": {
+        "assumptions": { "type": "string" },
+        "rent_roll": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "rent_roll_pdf": {
+      "description": "使用したレントロールPDF名。CSV経路では null。",
+      "type": ["string", "null"]
+    },
+    "extracted_units_count": { "type": "integer", "minimum": 0 },
+    "missing_required_count": { "type": "integer", "minimum": 0 },
+    "missing_optional_count": { "type": "integer", "minimum": 0 },
+    "missing_required_items": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/missingItem" }
+    },
+    "missing_optional_items": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/missingItem" }
+    },
+    "gpi": {
+      "description": "潜在総収入（年額・円）",
+      "type": "number",
+      "minimum": 0
+    },
+    "noi": {
+      "description": "運営純収益（年額・円）",
+      "type": "number"
+    },
+    "indicated_value": {
+      "description": "収益試算値（円）。鑑定評価の『収益価格』ではない。算定不能時は null。",
+      "type": ["number", "null"]
+    },
+    "output_files": {
+      "type": "object",
+      "required": ["missing_info", "revenue_analysis", "extraction_log"],
+      "properties": {
+        "missing_info": { "type": "string" },
+        "revenue_analysis": { "type": "string" },
+        "extraction_log": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "executed_at": {
+      "description": "実行時刻（ISO 8601 / UTC）",
+      "type": "string"
+    },
+    "pdf_extraction": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "definitions": {
+    "missingItem": {
+      "type": "object",
+      "required": ["category", "field", "location", "impact"],
+      "properties": {
+        "category": { "type": "string" },
+        "field": { "type": "string" },
+        "location": { "type": "string" },
+        "impact": { "type": "string" }
+      },
+      "additionalProperties": true
+    }
+  }
+}

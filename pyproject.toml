@@ -1,0 +1,4 @@
+[tool.pytest.ini_options]
+# テストから src/ のパッケージ(revenue_kun)を import できるようにする
+pythonpath = ["src"]
+testpaths = ["tests"]

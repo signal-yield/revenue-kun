@@ -1,0 +1,16 @@
+# 生成物（出力ファイル）
+output/*.xlsx
+output/*.md
+output/*.json
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# 仮想環境
+venv/
+.venv/
+
+# ツール設定
+.claude/
