@@ -107,7 +107,7 @@ NOI（運営純収益）を算出し、**収益試算値**と感応度分析を�
 ## ディレクトリ構成
 
 ```
-JSAI2026不動産OS/
+revenue-kun/
 ├── README.md                  # 本ファイル
 ├── requirements.txt           # 依存ライブラリ（PyYAML, openpyxl, pdfplumber, reportlab）
 ├── pyproject.toml             # pytest 設定（src/ を import パスに追加）
