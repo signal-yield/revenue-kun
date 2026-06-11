@@ -7,6 +7,9 @@ NOI（運営純収益）を算出し、**収益試算値**と感応度分析を�
 > - **本ツールは不動産鑑定評価ではありません。**
 > - 出力される金額は **「収益試算値」** であり、鑑定評価による **「収益価格」ではありません。**
 > - **欠損項目は推測補完しません。** 不明な入力は `missing_info.md` に記録され、計算からは除外されます（その旨が警告されます）。
+> - 正式な鑑定評価、価格判断、投資判断、法的判断が必要な場合は、不動産鑑定士、弁護士、税理士その他の専門家に確認してください。revenue-kun は、専門家による判断の前段階で、前提条件に基づく収益試算値を検算・整理するための補助ツールです。
+>
+> *For formal appraisal, pricing decisions, investment decisions, or legal/tax conclusions, consult a qualified real estate appraiser, attorney, tax advisor, or other relevant professional. revenue-kun is intended as a support tool for organizing and checking trial income estimates based on explicit assumptions before professional review.*
 
 ---
 
