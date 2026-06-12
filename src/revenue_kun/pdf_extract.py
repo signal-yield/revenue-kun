@@ -44,6 +44,9 @@ _HEADER_KEYS: list[tuple[str, str]] = [
 # これらの列が認識できなければ抽出を継続しない（必須列）
 _REQUIRED_KEYS = {"room": "部屋番号", "rent": "月額賃料", "status": "入居状況"}
 
+# room 列にマップされるヘッダートークン（繰り返しヘッダー行の判定に使う）
+_ROOM_HEADER_TOKENS: frozenset[str] = frozenset(t for t, k in _HEADER_KEYS if k == "room")
+
 
 @dataclass
 class ExtractionReport:
@@ -92,6 +95,32 @@ def _normalize_status(text: str | None) -> str | None:
     if any(k in s for k in ("空室", "空き", "空き室", "募集")):
         return "空室"
     return s  # 不明な値はそのまま保持（補完しない）
+
+
+def _is_non_data_row(room: str, raw: list[str | None], col_map: dict[str, int]) -> bool:
+    """小見出し・繰り返しヘッダー行と判定される場合に True を返す。
+
+    判定基準（いずれか一方）:
+    1. 区画フィールドが括弧で始まる小見出し（例: 【1F区画】, [2F]）
+    2. 区画フィールドがヘッダートークンを含み、かつ賃料列も非数値文字列である繰り返しヘッダー行
+       ※ 賃料が空欄（None）の空室行は条件2の対象外とし、誤除外しない。
+    """
+    # 1. 括弧で始まる小見出し（全角【】・半角[]・全角（）・半角()）
+    if re.match(r'^[【\[\(（]', room):
+        return True
+
+    # 2. 繰り返しヘッダー行
+    #    区画フィールドにヘッダートークン（部屋・号室・unit・room 等）が含まれ、
+    #    かつ賃料列が非空かつ非数値（ヘッダーラベル文字列）の場合に限定する。
+    room_lower = room.lower()
+    if any(tok in room_lower for tok in _ROOM_HEADER_TOKENS):
+        rent_idx = col_map.get("rent")
+        if rent_idx is not None and rent_idx < len(raw):
+            rent_raw = _clean(raw[rent_idx])
+            if rent_raw is not None and _to_number(rent_raw) is None:
+                return True
+
+    return False
 
 
 def _build_column_map(header: list[str | None]) -> dict[str, int]:
@@ -168,6 +197,9 @@ def extract_rent_roll_from_pdf(
                 room = _clean(get("room"))
                 if room is None:
                     # 部屋番号が無い行はデータ行とみなさない
+                    continue
+                if _is_non_data_row(room, raw, col_map):
+                    report.notes.append(f"「{room}」行を小見出し・ヘッダーと判定し除外しました。")
                     continue
 
                 area = _to_number(get("area"))
