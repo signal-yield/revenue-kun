@@ -17,6 +17,7 @@ from .missing import detect_missing
 from .noi import compute_noi
 from .outputs import (
     write_excel,
+    write_extraction_failure_log,
     write_extraction_log,
     write_missing_info,
 )
@@ -74,7 +75,18 @@ def run(
     phase = "Phase 1 (dummy CSV)"
     extraction_meta: dict = {}
     if use_pdf:
-        units, report = extract_rent_roll_from_pdf(rent_roll_pdf)
+        try:
+            units, report = extract_rent_roll_from_pdf(rent_roll_pdf)
+        except RentRollExtractionError as exc:
+            write_extraction_failure_log(
+                out / "extraction_log.json",
+                pdf_name=Path(rent_roll_pdf).name,
+                failure_reason=str(exc),
+                rows_extracted=exc.report.rows_extracted if exc.report else 0,
+                pages=exc.report.pages if exc.report else 0,
+                executed_at=datetime.now(timezone.utc).isoformat(),
+            )
+            raise
         extraction_method = "pdf"
         phase = "Phase 2 (PDF extraction)"
         extraction_meta = {

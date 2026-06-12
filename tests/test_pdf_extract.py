@@ -10,7 +10,7 @@ from revenue_kun.pdf_extract import (
     _resolve_header_key,
     extract_rent_roll_from_pdf,
 )
-from revenue_kun.sample_pdf import PATTERNS, build_pdf, generate_sample_pdf
+from revenue_kun.sample_pdf import PATTERNS, build_pdf, build_text_only_pdf, generate_sample_pdf
 
 
 @pytest.fixture(scope="module")
@@ -147,6 +147,63 @@ def test_repeated_header_row_excluded(tmp_path):
     assert rooms == {"101", "102"}
     # 除外したことが report.notes に記録されている
     assert any("部屋番号" in n for n in rep.notes)
+
+
+# --- column alias mapping（Issue #7）──────────────────────────────────────
+# --- safe failure handling（Issue #8）────────────────────────────────────
+def test_no_table_pdf_raises(tmp_path):
+    """テーブルを含まないPDFは RentRollExtractionError を送出する。"""
+    p = build_text_only_pdf(tmp_path / "no_table.pdf")
+    with pytest.raises(RentRollExtractionError) as ei:
+        extract_rent_roll_from_pdf(p)
+    # failure_reason が report に記録されている（report は必ず存在するはず）
+    assert ei.value.report is not None
+    assert ei.value.report.failure_reason is not None
+
+
+def test_header_only_pdf_raises(tmp_path):
+    """ヘッダー行のみで実データ行がないPDFは RentRollExtractionError を送出する。"""
+    p = tmp_path / "header_only.pdf"
+    headers = ["部屋番号", "用途", "面積(㎡)", "月額賃料(円)", "共益費(円)", "入居/空室"]
+    build_pdf(p, headers, [])  # データ行なし
+    with pytest.raises(RentRollExtractionError) as ei:
+        extract_rent_roll_from_pdf(p)
+    assert "データ行" in str(ei.value)
+    assert ei.value.report is not None
+    assert ei.value.report.rows_extracted == 0
+    assert "データ行" in (ei.value.report.failure_reason or "")
+
+
+def test_all_null_rent_occupied_raises(tmp_path):
+    """稼働区画の賃料がすべて非数値の場合は RentRollExtractionError を送出する。"""
+    p = tmp_path / "bad_rent.pdf"
+    headers = ["部屋番号", "用途", "面積(㎡)", "月額賃料(円)", "共益費(円)", "入居/空室"]
+    rows = [
+        ["101", "事務所", "100", "要確認", "30,000", "入居"],
+        ["102", "住宅",   "60",  "要確認", "10,000", "入居"],
+    ]
+    build_pdf(p, headers, rows)
+    with pytest.raises(RentRollExtractionError) as ei:
+        extract_rent_roll_from_pdf(p)
+    assert "稼働区画" in str(ei.value)
+    assert ei.value.report is not None
+    assert "稼働区画" in (ei.value.report.failure_reason or "")
+
+
+def test_all_vacant_null_rent_passes(tmp_path):
+    """全区画が空室で賃料欠損の場合は safe failure にならない（正常パス）。"""
+    p = tmp_path / "all_vacant.pdf"
+    headers = ["部屋番号", "用途", "面積(㎡)", "月額賃料(円)", "共益費(円)", "入居/空室"]
+    rows = [
+        ["101", "事務所", "100", "", "30,000", "空室"],
+        ["102", "住宅",   "60",  "", "",        "空室"],
+    ]
+    build_pdf(p, headers, rows)
+    units, rep = extract_rent_roll_from_pdf(p)
+    assert rep.rows_extracted == 2
+    assert all(not u.is_occupied for u in units)
+    assert all(u.月額賃料_円 is None for u in units)
+    assert rep.failure_reason is None
 
 
 # --- column alias mapping（Issue #7）──────────────────────────────────────
