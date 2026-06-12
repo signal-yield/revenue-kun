@@ -20,6 +20,10 @@ from .rent_roll import RentRollUnit
 class RentRollExtractionError(Exception):
     """PDFから必須列を認識できない等、抽出を継続できない場合に送出する。"""
 
+    def __init__(self, message: str, report: ExtractionReport | None = None) -> None:
+        super().__init__(message)
+        self.report = report
+
 
 # ヘッダー文言（小文字化して部分一致）→ 内部キー のマッピング。
 # 各エントリは (token, canonical_key)。先に書いたトークンが優先（first-match）。
@@ -66,6 +70,7 @@ class ExtractionReport:
     pages: int = 0
     column_map: dict[str, int] = field(default_factory=dict)
     notes: list[str] = field(default_factory=list)
+    failure_reason: str | None = None  # safe failure 時にセットされる
 
 
 def _clean(text: str | None) -> str | None:
@@ -188,19 +193,22 @@ def extract_rent_roll_from_pdf(
             if not col_map:
                 col_map = _build_column_map(table[0])
                 if not col_map:
-                    raise RentRollExtractionError(
+                    report.failure_reason = (
                         f"PDF '{path.name}' のヘッダー行を認識できませんでした。"
                         "列名（部屋番号/月額賃料/入居状況 等）を確認してください。"
                     )
+                    raise RentRollExtractionError(report.failure_reason, report=report)
                 # 必須列の存在チェック（欠ければ明示的エラーで停止）
                 missing_cols = [
                     label for key, label in _REQUIRED_KEYS.items() if key not in col_map
                 ]
                 if missing_cols:
-                    raise RentRollExtractionError(
+                    cols_text = "、".join(missing_cols)
+                    report.failure_reason = (
                         f"PDF '{path.name}' に必須列が見つかりません: "
-                        f"{', '.join(missing_cols)}。補完せず処理を停止します。"
+                        f"{cols_text}。補完せず処理を停止します。"
                     )
+                    raise RentRollExtractionError(report.failure_reason, report=report)
                 report.column_map = col_map
                 # 任意列が無い場合は注記（処理は継続）
                 for key, label in (("area", "面積"), ("cam", "共益費"), ("use", "用途")):
@@ -251,5 +259,43 @@ def extract_rent_roll_from_pdf(
                     )
                 )
                 report.rows_extracted += 1
+
+    # ── Post-extraction safe failure checks ─────────────────────────────────
+    # Check 1: 全ページで extract_table() が None → テーブル未検出
+    #   ※ ループ内の「ヘッダー行未認識」とは区別する（そちらはループ内で raise 済み）
+    if not col_map:
+        report.failure_reason = (
+            "どのページからもレントロールのテーブルを検出できませんでした。"
+            "text-based の単純な表形式PDFを使用してください（スキャンPDF・OCRは非対応）。"
+        )
+        raise RentRollExtractionError(
+            f"PDF '{path.name}': {report.failure_reason}",
+            report=report,
+        )
+
+    # Check 2: ヘッダーは認識できたがデータ行がゼロ（ヘッダーのみPDF）
+    if report.rows_extracted == 0:
+        report.failure_reason = (
+            "ヘッダー行は認識しましたが、データ行を1件も抽出できませんでした。"
+            "テーブルの内容（区画数・欠損行の割合）を確認してください。"
+        )
+        raise RentRollExtractionError(
+            f"PDF '{path.name}': {report.failure_reason}",
+            report=report,
+        )
+
+    # Check 3: 稼働区画が存在するが、月額賃料を数値として読み取れた行がゼロ
+    #   空室のみで賃料が全欠損の場合は正常（GPI=0 は仕様通り）
+    occupied_units = [u for u in units if u.is_occupied]
+    if occupied_units and all(u.月額賃料_円 is None for u in occupied_units):
+        report.failure_reason = (
+            f"稼働区画が {len(occupied_units)} 件ありますが、"
+            "いずれの月額賃料も数値として読み取れませんでした。"
+            "賃料列の書式（円表記・カンマ区切り等）を確認してください。"
+        )
+        raise RentRollExtractionError(
+            f"PDF '{path.name}': {report.failure_reason}",
+            report=report,
+        )
 
     return units, report

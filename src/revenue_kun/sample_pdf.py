@@ -152,6 +152,28 @@ def build_pdf(path: str | Path, headers: list[str], rows: list[list[str]]) -> Pa
     return path
 
 
+def build_text_only_pdf(path: str | Path) -> Path:
+    """テーブルを含まないテキストのみのPDFを生成する（safe failure テスト用）。
+
+    pdfplumber の extract_table() がテーブルを検出できないケースを再現する。
+    reportlab の Paragraph 要素は罫線を持たないため、テーブルとして認識されない。
+    """
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    pdfmetrics.registerFont(UnicodeCIDFont(_FONT))
+
+    styles = getSampleStyleSheet()
+    body_style = ParagraphStyle(
+        "JPBodyText", parent=styles["Normal"], fontName=_FONT, fontSize=10, leading=14
+    )
+    doc = SimpleDocTemplate(str(path), pagesize=A4)
+    doc.build([
+        Paragraph("このPDFにはテーブルが含まれていません。", body_style),
+        Paragraph("賃料情報は表形式で記録されていないため、本ツールで抽出できません。", body_style),
+    ])
+    return path
+
+
 def generate_sample_pdf(path: str | Path, pattern: str | None = None) -> Path:
     """合成レントロールPDFを生成して保存する。
 

@@ -138,6 +138,39 @@ def write_extraction_log(
 
 
 # ---------------------------------------------------------------------------
+# extraction_log.json (failure path)
+# ---------------------------------------------------------------------------
+def write_extraction_failure_log(
+    path: str | Path,
+    *,
+    pdf_name: str,
+    failure_reason: str,
+    rows_extracted: int = 0,
+    pages: int = 0,
+    executed_at: str = "",
+) -> None:
+    """PDF抽出失敗時の最小限の extraction_log.json を出力する。
+
+    成功時の write_extraction_log() と同じファイルに書き込む。
+    failure=true と failure_reason を含む簡略スキーマで記録する。
+    """
+    path = Path(path)
+    log = {
+        "tool": "収益還元クン (revenue-kun)",
+        "version": __version__,
+        "disclaimer": DISCLAIMER,
+        "extraction_method": "pdf",
+        "failure": True,
+        "failure_reason": failure_reason,
+        "pdf_name": pdf_name,
+        "rows_extracted": rows_extracted,
+        "pages": pages,
+        "executed_at": executed_at,
+    }
+    path.write_text(json.dumps(log, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+# ---------------------------------------------------------------------------
 # revenue_analysis.xlsx
 # ---------------------------------------------------------------------------
 _HEADER_FILL = PatternFill("solid", fgColor="305496")
