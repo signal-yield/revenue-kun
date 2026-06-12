@@ -71,6 +71,8 @@ def build_parser() -> argparse.ArgumentParser:
                    help="レントロールPDFのパス（指定するとPDFから抽出する）")
     p.add_argument("--output", "--out", dest="output", default=str(ROOT / "output"),
                    help="出力ディレクトリ")
+    p.add_argument("--dry-run", action="store_true", default=False,
+                   help="入力抽出と診断のみを実行し、計算・成果物生成は行わない")
     p.add_argument("--version", action="version", version=f"revenue-kun {__version__}")
     return p
 
@@ -80,12 +82,15 @@ def run(
     rent_roll_path: str,
     out_dir: str,
     rent_roll_pdf: str | None = None,
+    dry_run: bool = False,
 ) -> int:
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
 
     use_pdf = rent_roll_pdf is not None
     mode = "Phase 2 / PDF抽出" if use_pdf else "Phase 1 / ダミーCSV"
+    if dry_run:
+        mode += " / ドライラン"
     print("=" * 64)
     print(f"  収益還元クン v{__version__}  （{mode}）")
     print("  " + DISCLAIMER)
@@ -107,14 +112,15 @@ def run(
                 failure=True,
                 failure_reason=exc.report.failure_reason if exc.report else str(exc),
             )
-            write_extraction_failure_log(
-                out / "extraction_log.json",
-                pdf_name=Path(rent_roll_pdf).name,
-                failure_reason=str(exc),
-                rows_extracted=exc.report.rows_extracted if exc.report else 0,
-                pages=exc.report.pages if exc.report else 0,
-                executed_at=datetime.now(timezone.utc).isoformat(),
-            )
+            if not dry_run:
+                write_extraction_failure_log(
+                    out / "extraction_log.json",
+                    pdf_name=Path(rent_roll_pdf).name,
+                    failure_reason=str(exc),
+                    rows_extracted=exc.report.rows_extracted if exc.report else 0,
+                    pages=exc.report.pages if exc.report else 0,
+                    executed_at=datetime.now(timezone.utc).isoformat(),
+                )
             raise
         extraction_method = "pdf"
         phase = "Phase 2 (PDF extraction)"
@@ -141,6 +147,11 @@ def run(
         rr_source = Path(rent_roll_path).name
         print(f"レントロール: {len(units)} 区画を読み込みました。")
         _print_diagnostics_summary(input_type="CSV", units=len(units))
+
+    if dry_run:
+        print("[ドライラン] 入力抽出と診断を完了しました。計算・成果物生成はスキップしました。")
+        print("=" * 64)
+        return 0
 
     # 2. 欠損検出（補完しない）
     missing = detect_missing(assumptions, units, rent_roll_source=rr_source)
@@ -211,7 +222,8 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
         return run(args.assumptions, args.rent_roll, args.output,
-                   rent_roll_pdf=args.rent_roll_pdf)
+                   rent_roll_pdf=args.rent_roll_pdf,
+                   dry_run=args.dry_run)
     except FileNotFoundError as e:
         print(f"[エラー] {e}", file=sys.stderr)
         return 1
