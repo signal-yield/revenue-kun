@@ -97,3 +97,52 @@ def test_unrecognized_header_raises(tmp_path):
     build_pdf(p, ["aaa", "bbb", "ccc"], [["1", "2", "3"]])
     with pytest.raises(RentRollExtractionError):
         extract_rent_roll_from_pdf(p)
+
+
+# --- sub-header / repeated-header の除外（Issue #6） ----------------------
+def test_subheader_rows_excluded(tmp_path):
+    """【1F区画】のような括弧小見出し行は除外され、実データ行のみ抽出される。"""
+    p = tmp_path / "subheader.pdf"
+    headers = ["部屋番号", "用途", "面積(㎡)", "月額賃料(円)", "共益費(円)", "入居/空室"]
+    rows = [
+        ["【1F区画】", "", "", "", "", ""],        # 括弧小見出し → 除外
+        ["101", "事務所", "100.0", "300,000", "30,000", "入居"],
+        ["102", "住宅",   "60.0",  "150,000", "10,000", "入居"],
+        ["【2F区画】", "", "", "", "", ""],        # 括弧小見出し → 除外
+        ["201", "住宅",   "55.0",  "",         "",       "空室"],  # 空室・賃料欠損 → 除外しない
+    ]
+    build_pdf(p, headers, rows)
+    units, rep = extract_rent_roll_from_pdf(p)
+
+    assert rep.rows_extracted == 3, f"sub-header 行が除外されず rows_extracted={rep.rows_extracted}"
+    rooms = {u.区画 for u in units}
+    assert rooms == {"101", "102", "201"}
+    assert "【1F区画】" not in rooms
+    assert "【2F区画】" not in rooms
+    # 除外したことが report.notes に記録されている
+    assert any("【1F区画】" in n for n in rep.notes)
+    assert any("【2F区画】" in n for n in rep.notes)
+    # 空室区画（201）は欠損があっても除外されない
+    unit_201 = next(u for u in units if u.区画 == "201")
+    assert not unit_201.is_occupied
+    assert unit_201.月額賃料_円 is None
+
+
+def test_repeated_header_row_excluded(tmp_path):
+    """ページ中に再掲されたヘッダー行は除外され、データ行は保持される。"""
+    p = tmp_path / "repheader.pdf"
+    headers = ["部屋番号", "用途", "面積(㎡)", "月額賃料(円)", "共益費(円)", "入居/空室"]
+    rows = [
+        ["101", "事務所", "100.0", "300,000", "30,000", "入居"],
+        # ページ再掲ヘッダー: 部屋番号セルにヘッダートークン、賃料セルも非数値
+        ["部屋番号", "用途", "面積(㎡)", "月額賃料(円)", "共益費(円)", "入居/空室"],
+        ["102", "住宅",   "60.0",  "150,000", "10,000", "入居"],
+    ]
+    build_pdf(p, headers, rows)
+    units, rep = extract_rent_roll_from_pdf(p)
+
+    assert rep.rows_extracted == 2
+    rooms = {u.区画 for u in units}
+    assert rooms == {"101", "102"}
+    # 除外したことが report.notes に記録されている
+    assert any("部屋番号" in n for n in rep.notes)
