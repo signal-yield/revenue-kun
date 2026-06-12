@@ -1,7 +1,12 @@
-# revenue-kun（収益還元クン） v0.1
+# revenue-kun（収益還元クン） v0.2.0
 
 直接還元法による**収益試算ツール**（CLI）。レントロールと前提条件から
 NOI（運営純収益）を算出し、**収益試算値**と感応度分析を出力します。
+
+> **v0.2.0 — PDF ingestion 限定対応**  
+> text-based PDF（PyMuPDF で直接テキスト抽出できるもの）の単純なレントロール表に限定して対応しました。  
+> OCR・スキャンPDF・複数ページ結合・複雑な結合セル・PII マスキングは対象外です。  
+> CSV 経路は引き続き利用できます。
 
 > ## ⚠️ 重要な注意
 > - **本ツールは不動産鑑定評価ではありません。**
@@ -45,9 +50,16 @@ NOI（運営純収益）を算出し、**収益試算値**と感応度分析を�
 > **合成データの明示**：合成PDFの物件名・部屋・賃料・面積はすべて架空です。
 > 実在の物件・借主・賃料とは一切関係ありません。一部セルは欠損検出の確認のため意図的に空欄です。
 
-## Phase 2.1（追加）— PDF抽出の堅牢化
+## Phase 2.1（追加）— PDF抽出の堅牢化（v0.2.0）
 
 完全合成PDFを **3パターン** 用意し、抽出→NOI整理→収益試算値→`missing_info`/`extraction_log` のE2Eを安定化しました。
+v0.2.0 では以下を追加し、PDF ingestion をさらに堅牢化しています。
+
+| v0.2.0 追加機能 | 内容 | Issue / PR |
+|---|---|---|
+| 小見出し・繰り返しヘッダー行の除外 | `【1F区画】` 等の小見出し行・表の途中で現れる繰り返しヘッダー行を除外 | Issue #6 / PR #9 |
+| 列名エイリアス拡充 | `_resolve_header_key()` を独立化し、認識できる列名表記を拡充 | Issue #7 / PR #10 |
+| safe failure handling | 抽出が信頼できない場合に silent failure を防止し、`failure_reason` を記録して exit 2 で終了 | Issue #8 / PR #11 |
 
 | パターン | ファイル | 内容 |
 |---|---|---|
@@ -91,19 +103,51 @@ NOI（運営純収益）を算出し、**収益試算値**と感応度分析を�
 | `gpi` / `noi` / `indicated_value` | 潜在総収入 / 運営純収益 / 収益試算値（鑑定評価ではない） |
 | `output_files` | 出力ファイル（missing_info / revenue_analysis / extraction_log） |
 | `executed_at` | 実行時刻（ISO8601 / UTC） |
+| `failure` | safe failure 発生時 `true`（正常時は出力されない） |
+| `failure_reason` | safe failure の理由（`"no_table_found"` / `"no_data_rows"` / `"all_rent_non_numeric"`） |
 
-### 列名ゆれの最小対応
-| 内部項目 | 認識する表記 |
+### 列名エイリアス対応（v0.2.0 拡充）
+
+| canonical key | 認識する表記（抜粋） |
 |---|---|
-| 部屋番号 | 部屋番号 / 号室 / 区画 / unit / room |
-| 月額賃料 | 月額賃料 / 賃料 / rent |
-| 共益費 | 共益費 / 管理費 / common_fee |
-| 入居状況 | 入居状況 / 入居 / 空室 / 稼働 / status |
-| 面積 | 面積 / area |
+| `room`（部屋番号） | 部屋番号 / 号室 / 区画 / 室番号 / unit / room / room_no |
+| `rent`（月額賃料） | 月額賃料 / 賃料 / 月額 / 賃料額 / rent / monthly_rent |
+| `cam`（共益費） | 共益費 / 管理費 / 月額共益費 / common_fee / cam |
+| `status`（入居状況） | 入居状況 / 入居 / 空室 / 稼働 / 契約状況 / status / occupancy |
+| `area`（面積） | 面積 / 専有面積 / 賃貸面積 / area / floor_area |
+| `use`（用途） | 用途 / 使用用途 / use / usage |
+| `notes`（備考） | 備考 / 特記 / メモ / notes / remarks |
 
-### スコープ外（今後）
-- **複雑なPDF**：単純な罫線付き表（1ページ）のみ対象。複数ページ・結合セル・スキャン画像（OCR）は後回し。
-- **Docker / DCF法 / 本物PDF対応 / 個人情報マスキング自動化**：未実装。
+### safe failure conditions（v0.2.0）
+
+以下の条件に該当する場合、`RentRollExtractionError` を発生させ exit 2 で終了します（silent failure を防止）。
+
+| 条件 | `failure_reason` |
+|---|---|
+| 全ページで `extract_table()` が `None` を返す | `"no_table_found"` |
+| ヘッダーは認識できるがデータ行がゼロ | `"no_data_rows"` |
+| 稼働区画が存在するが月額賃料がすべて非数値形式 | `"all_rent_non_numeric"` |
+
+`extraction_log.json` に `failure: true` と `failure_reason` が machine-readable な形式で記録されます。
+
+### 対応範囲・非対応範囲（v0.2.0）
+
+**対応（text-based PDF の単純なレントロール表）**
+
+- text-based PDF（PyMuPDF で直接テキスト抽出可能なもの）
+- 1ページ・結合セルなしの単純なレントロール表
+- canonical key / 列名エイリアス mapping
+- 小見出し行・繰り返しヘッダー行の除外
+- safe failure handling（`failure` / `failure_reason` を `extraction_log.json` に出力）
+
+**非対応（将来 Issue 化）**
+
+- OCR・スキャンPDF
+- 複数ページのテーブル結合
+- 複雑な結合セル
+- ベンダー固有ヒューリスティック
+- PII マスキング
+- 鑑定評価・投資助言・法律助言
 
 ---
 
@@ -284,6 +328,6 @@ NOI（運営純収益）   = EGI − 運営費用合計
 
 ## バージョン・ライセンス
 
-**v0.1.0** — Apache License 2.0（Copyright 2026 km）
+**v0.2.0** — Apache License 2.0（Copyright 2026 km）
 
 変更履歴は [CHANGELOG.md](CHANGELOG.md) を参照してください。
