@@ -14,3 +14,12 @@ venv/
 
 # ツール設定
 .claude/
+
+# ローカル評価用（実物・匿名化サンプルPDF）— コミット禁止
+samples/private/
+eval/
+eval_output/
+output_base/
+output_simple/
+output_missing/
+output_different/
