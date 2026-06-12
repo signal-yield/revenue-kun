@@ -34,6 +34,30 @@ def _yen(value: float | None) -> str:
     return "（算定不能）" if value is None else f"{value:,.0f} 円"
 
 
+def _print_diagnostics_summary(
+    *,
+    input_type: str,
+    units: int | None = None,
+    column_map: dict | None = None,
+    failure: bool = False,
+    failure_reason: str | None = None,
+) -> None:
+    """抽出診断サマリーを出力する。failure=True のときは stderr へ出力する。"""
+    out = sys.stderr if failure else sys.stdout
+    print("[抽出診断]", file=out)
+    print(f"  入力形式       : {input_type}", file=out)
+    if column_map:
+        fields = ", ".join(sorted(column_map.keys()))
+        print(f"  認識フィールド  : {fields}", file=out)
+    if failure:
+        print("  抽出結果       : 失敗", file=out)
+        if failure_reason:
+            print(f"  failure_reason : {failure_reason}", file=out)
+    else:
+        if units is not None:
+            print(f"  抽出区画数     : {units}", file=out)
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="revenue-kun",
@@ -78,6 +102,11 @@ def run(
         try:
             units, report = extract_rent_roll_from_pdf(rent_roll_pdf)
         except RentRollExtractionError as exc:
+            _print_diagnostics_summary(
+                input_type="PDF",
+                failure=True,
+                failure_reason=exc.report.failure_reason if exc.report else str(exc),
+            )
             write_extraction_failure_log(
                 out / "extraction_log.json",
                 pdf_name=Path(rent_roll_pdf).name,
@@ -102,10 +131,16 @@ def run(
               f"（欠損セル {report.cells_missing} 件）。")
         for n in report.notes:
             print(f"  [注記] {n}")
+        _print_diagnostics_summary(
+            input_type="PDF",
+            units=report.rows_extracted,
+            column_map=report.column_map,
+        )
     else:
         units = load_rent_roll(rent_roll_path)
         rr_source = Path(rent_roll_path).name
         print(f"レントロール: {len(units)} 区画を読み込みました。")
+        _print_diagnostics_summary(input_type="CSV", units=len(units))
 
     # 2. 欠損検出（補完しない）
     missing = detect_missing(assumptions, units, rent_roll_source=rr_source)
