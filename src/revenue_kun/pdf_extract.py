@@ -22,23 +22,31 @@ class RentRollExtractionError(Exception):
 
 
 # ヘッダー文言（小文字化して部分一致）→ 内部キー のマッピング。
-# 日本語の表記ゆれ・英語名に最小対応する。
+# 各エントリは (token, canonical_key)。先に書いたトークンが優先（first-match）。
+# ルール:
+#   - token は小文字・日本語・英語いずれも可（マッチ時に比較側を lower() するため）
+#   - 長い・より具体的なトークンを短い・汎用トークンより前に置く
+#   - fuzzy matching はしない（完全一致 / 部分文字列一致のみ）
+#   - notes 列は現行の行処理では未使用だが、認識しておくことで #8 の接続口になる
 _HEADER_KEYS: list[tuple[str, str]] = [
-    # room（部屋番号 / 号室 / 区画 / unit / room）
+    # ── room（区画番号 / 号室 / unit / room）───────────────────────────
     ("部屋", "room"), ("号室", "room"), ("区画", "room"),
     ("unit", "room"), ("room", "room"),
-    # use（用途）
+    # ── use（用途 / 区分）──────────────────────────────────────────────
     ("用途", "use"), ("use", "use"), ("type", "use"),
-    # area（面積 / area）
-    ("面積", "area"), ("area", "area"),
-    # rent（月額賃料 / 賃料 / rent）
-    ("賃料", "rent"), ("rent", "rent"),
-    # cam（共益費 / 管理費 / common_fee）
-    ("共益", "cam"), ("管理費", "cam"),
-    ("common_fee", "cam"), ("common fee", "cam"), ("管理", "cam"),
-    # status（入居状況 / 入居 / 空室 / 稼働 / status）
+    # ── area（専有面積 / ㎡ / Floor Area）──────────────────────────────
+    ("面積", "area"), ("㎡", "area"), ("floor area", "area"), ("area", "area"),
+    # ── rent（月額賃料 / 家賃 / Monthly Rent）──────────────────────────
+    ("賃料", "rent"), ("家賃", "rent"), ("monthly rent", "rent"), ("rent", "rent"),
+    # ── cam（共益費 / 管理費 / CAM / Service Charge）────────────────────
+    ("共益", "cam"), ("管理費", "cam"), ("サービス料", "cam"),
+    ("common_fee", "cam"), ("common fee", "cam"), ("service charge", "cam"),
+    ("cam", "cam"), ("管理", "cam"),
+    # ── status（入居状況 / 稼働 / Occupancy）────────────────────────────
     ("入居", "status"), ("空室", "status"), ("稼働", "status"),
-    ("status", "status"), ("状況", "status"),
+    ("occupancy", "status"), ("status", "status"), ("状況", "status"),
+    # ── notes（備考 / メモ / Remarks）── オプション列、現行処理では未使用
+    ("備考", "notes"), ("メモ", "notes"), ("remarks", "notes"), ("notes", "notes"),
 ]
 
 # これらの列が認識できなければ抽出を継続しない（必須列）
@@ -123,15 +131,32 @@ def _is_non_data_row(room: str, raw: list[str | None], col_map: dict[str, int]) 
     return False
 
 
+def _resolve_header_key(cell: str | None) -> str | None:
+    """ヘッダーセル1つを canonical key に変換する。認識できない場合は None。
+
+    _HEADER_KEYS を先頭から走査し、token が cell（小文字化）に含まれる
+    最初のエントリの key を返す（first-match）。
+    fuzzy matching はしない。
+    """
+    c = (_clean(cell) or "").lower()
+    if not c:
+        return None
+    for token, key in _HEADER_KEYS:
+        if token in c:
+            return key
+    return None
+
+
 def _build_column_map(header: list[str | None]) -> dict[str, int]:
-    """ヘッダー行から「内部キー→列インデックス」を作る。表記ゆれ・英語名に対応。"""
+    """ヘッダー行から「canonical key → 列インデックス」を作る。
+
+    各列を _resolve_header_key() で解決し、同一 key の最初の列だけを登録する。
+    """
     col_map: dict[str, int] = {}
     for idx, cell in enumerate(header):
-        c = (_clean(cell) or "").lower()
-        for token, key in _HEADER_KEYS:
-            if token in c and key not in col_map:
-                col_map[key] = idx
-                break
+        key = _resolve_header_key(cell)
+        if key is not None and key not in col_map:
+            col_map[key] = idx
     return col_map
 
 

@@ -7,6 +7,7 @@ import pytest
 
 from revenue_kun.pdf_extract import (
     RentRollExtractionError,
+    _resolve_header_key,
     extract_rent_roll_from_pdf,
 )
 from revenue_kun.sample_pdf import PATTERNS, build_pdf, generate_sample_pdf
@@ -146,3 +147,57 @@ def test_repeated_header_row_excluded(tmp_path):
     assert rooms == {"101", "102"}
     # 除外したことが report.notes に記録されている
     assert any("部屋番号" in n for n in rep.notes)
+
+
+# --- column alias mapping（Issue #7）──────────────────────────────────────
+@pytest.mark.parametrize("cell, expected_key", [
+    # ── room ──
+    ("部屋番号",        "room"),
+    ("号室",            "room"),
+    ("区画番号",        "room"),
+    ("Unit No.",        "room"),
+    ("Room",            "room"),
+    # ── use ──
+    ("用途",            "use"),
+    ("用途区分",        "use"),
+    ("Type",            "use"),
+    # ── area ──
+    ("専有面積（㎡）",  "area"),
+    ("面積",            "area"),
+    ("㎡",              "area"),
+    ("Area",            "area"),
+    ("Floor Area",      "area"),
+    # ── rent ──
+    ("月額賃料（円）",  "rent"),
+    ("賃料（税抜）",    "rent"),
+    ("家賃",            "rent"),
+    ("Monthly Rent",    "rent"),
+    ("Rent",            "rent"),
+    # ── cam ──
+    ("共益費",          "cam"),
+    ("管理費",          "cam"),
+    ("サービス料",      "cam"),
+    ("CAM",             "cam"),
+    ("Common Fee",      "cam"),
+    ("Service Charge",  "cam"),
+    # ── status ──
+    ("入居状況",        "status"),
+    ("空室/入居",       "status"),
+    ("稼働状況",        "status"),
+    ("契約状況",        "status"),
+    ("Status",          "status"),
+    ("Occupancy",       "status"),
+    # ── notes（新規 canonical key）──
+    ("備考",            "notes"),
+    ("メモ",            "notes"),
+    ("Remarks",         "notes"),
+    ("Notes",           "notes"),
+    # ── 未知列 → None（誤変換しない）──
+    ("物件名称",        None),
+    ("建築年次",        None),
+    ("",                None),
+    (None,              None),
+])
+def test_resolve_header_key(cell, expected_key):
+    """各ヘッダーセルが正しい canonical key に解決される（または None）。"""
+    assert _resolve_header_key(cell) == expected_key
