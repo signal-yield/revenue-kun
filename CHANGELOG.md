@@ -1,5 +1,64 @@
 # CHANGELOG
 
+## [v0.3.0] — 2026-06-13
+
+### 基本方針（変更なし）
+
+- **本ツールは不動産鑑定評価ではありません。**
+- 出力される金額はすべて **「収益試算値」** です。鑑定評価による **「収益価格」ではありません。**
+- 欠損項目は推測補完しません。
+- 本バージョンは **text-based PDF の単純なレントロール表への限定対応** です。実物PDF全面対応ではありません。
+- **PDF抽出範囲は v0.2.0 から拡張していません。**
+
+---
+
+### Added
+
+- CLI extraction diagnostics summary for CSV and limited text-based PDF inputs（Issue #13 / PR #16）
+  - 入力形式（CSV / PDF）を表示
+  - PDF 入力の場合、認識した canonical fields を表示
+  - 抽出区画数を表示
+  - safe failure 時は `[抽出診断]` を stderr に出力し、`failure_reason` を表示
+- `--dry-run` mode：入力抽出と診断のみを実行し、計算・成果物生成を行わない（Issue #14 / PR #17）
+  - CSV / text-based PDF 成功時: exit 0、output files を生成しない
+  - PDF safe failure 時: failure_reason を表示し exit 2、`extraction_log.json` を生成しない
+- CLI help test：`--dry-run` が `--help` 出力に含まれることを検証（Issue #15 / PR #18）
+
+### Changed
+
+- README を v0.3.0 向けに更新（Issue #15 / PR #18）：
+  - v0.3.0 追加機能テーブルを追加
+  - CSV / PDF 通常実行・dry-run の usage examples を追加
+  - diagnostics summary の見方、safe failure の見方、`extraction_log.json` の見方を追加
+  - 出荷前チェックリストに dry-run ステップを追加
+- README の `failure_reason` 説明を実態に合わせて修正：短縮コード（`"no_table_found"` 等）ではなく日本語説明文であることを明記
+
+### Not Changed / Out of Scope
+
+- PDF抽出範囲の拡張なし
+- OCR・スキャンPDF対応なし
+- 複数ページテーブル結合なし
+- 複雑な結合セル対応なし
+- vendor-specific heuristics なし
+- PII マスキングなし
+- 鑑定評価・投資助言・法律助言ではない
+
+### Test Results
+
+| タイミング | テスト数 | 結果 |
+|-----------|---------|------|
+| PR #16 merge 時点 | 91 | 91/91 PASSED |
+| PR #17 merge 時点 | 105 | 105/105 PASSED |
+| PR #18 merge 時点 | 107 | 107/107 PASSED |
+
+### References
+
+- Issue #13 / PR #16 / SHA `df2ef0c`
+- Issue #14 / PR #17 / SHA `8f37350`
+- Issue #15 / PR #18 / SHA `4ef6381`
+
+---
+
 ## [v0.2.0] — 2026-06-12
 
 ### 基本方針（変更なし）
