@@ -1,10 +1,11 @@
-# revenue-kun（収益還元クン） v0.2.0
+# revenue-kun（収益還元クン） v0.3.0
 
 直接還元法による**収益試算ツール**（CLI）。レントロールと前提条件から
 NOI（運営純収益）を算出し、**収益試算値**と感応度分析を出力します。
 
-> **v0.2.0 — PDF ingestion 限定対応**  
-> text-based PDF（PyMuPDF で直接テキスト抽出できるもの）の単純なレントロール表に限定して対応しました。  
+> **v0.3.0 — CLI UX and diagnostics**  
+> `--dry-run` モードと抽出診断サマリーを追加しました。PDF 抽出範囲は v0.2.0 と同じです。  
+> text-based PDF（PyMuPDF で直接テキスト抽出できるもの）の単純なレントロール表に限定しています。  
 > OCR・スキャンPDF・複数ページ結合・複雑な結合セル・PII マスキングは対象外です。  
 > CSV 経路は引き続き利用できます。
 
@@ -104,7 +105,7 @@ v0.2.0 では以下を追加し、PDF ingestion をさらに堅牢化してい�
 | `output_files` | 出力ファイル（missing_info / revenue_analysis / extraction_log） |
 | `executed_at` | 実行時刻（ISO8601 / UTC） |
 | `failure` | safe failure 発生時 `true`（正常時は出力されない） |
-| `failure_reason` | safe failure の理由（`"no_table_found"` / `"no_data_rows"` / `"all_rent_non_numeric"`） |
+| `failure_reason` | safe failure の理由（日本語の説明文。`failure: true` の場合のみ記録） |
 
 ### 列名エイリアス対応（v0.2.0 拡充）
 
@@ -122,13 +123,14 @@ v0.2.0 では以下を追加し、PDF ingestion をさらに堅牢化してい�
 
 以下の条件に該当する場合、`RentRollExtractionError` を発生させ exit 2 で終了します（silent failure を防止）。
 
-| 条件 | `failure_reason` |
+| 条件 | `failure_reason` の内容 |
 |---|---|
-| 全ページで `extract_table()` が `None` を返す | `"no_table_found"` |
-| ヘッダーは認識できるがデータ行がゼロ | `"no_data_rows"` |
-| 稼働区画が存在するが月額賃料がすべて非数値形式 | `"all_rent_non_numeric"` |
+| 全ページで `extract_table()` が `None` を返す | テーブル未検出の旨を記述した日本語文字列 |
+| ヘッダーは認識できるがデータ行がゼロ | データ行ゼロの旨を記述した日本語文字列 |
+| 稼働区画が存在するが月額賃料がすべて非数値形式 | 賃料非数値の旨と区画数を記述した日本語文字列 |
 
-`extraction_log.json` に `failure: true` と `failure_reason` が machine-readable な形式で記録されます。
+`extraction_log.json` に `failure: true` と `failure_reason`（日本語の説明文）が記録されます。  
+CLI stderr にも `[抽出診断]` として `failure_reason` が表示されます（v0.3.0 追加）。
 
 ### 対応範囲・非対応範囲（v0.2.0）
 
@@ -148,6 +150,86 @@ v0.2.0 では以下を追加し、PDF ingestion をさらに堅牢化してい�
 - ベンダー固有ヒューリスティック
 - PII マスキング
 - 鑑定評価・投資助言・法律助言
+
+## v0.3.0 — CLI UX and diagnostics
+
+PDF 抽出範囲は拡張せず、CLI の使い勝手と診断情報を強化しました。
+
+| v0.3.0 追加機能 | 内容 | Issue / PR |
+|---|---|---|
+| 抽出診断サマリー | 入力形式・認識フィールド・抽出区画数・safe failure 状態を CLI に表示 | Issue #13 / PR #16 |
+| `--dry-run` モード | 入力抽出と診断のみを実行し、計算・成果物生成はスキップ | Issue #14 / PR #17 |
+| README usage examples | `--dry-run`・診断サマリー・failure の見方を追加 | Issue #15 |
+
+### 診断サマリーの見方
+
+通常実行・dry-run ともに、抽出直後に `[抽出診断]` ブロックが表示されます。
+
+**CSV 入力の場合（stdout）**
+
+```
+[抽出診断]
+  入力形式       : CSV
+  抽出区画数     : 5
+```
+
+**text-based PDF 入力の場合（stdout）**
+
+```
+[抽出診断]
+  入力形式       : PDF
+  認識フィールド  : area, cam, rent, room, status, use
+  抽出区画数     : 5
+```
+
+**PDF safe failure の場合（stderr）**
+
+```
+[抽出診断]
+  入力形式       : PDF
+  抽出結果       : 失敗
+  failure_reason : どのページからもレントロールのテーブルを検出できませんでした。...
+```
+
+### `--dry-run` の使い方
+
+入力が正しく読み取れるか事前に確認する場合に使います。計算・成果物生成は行いません。
+
+```powershell
+# CSV dry-run: CSVが読み取れるか確認
+python src/main.py --assumptions assumptions.sample.yaml --dry-run
+
+# PDF dry-run: PDFが読み取れるか確認
+python src/main.py --assumptions assumptions.sample.yaml --rent-roll-pdf data/sample_rentroll_simple.pdf --dry-run
+```
+
+dry-run が成功すると以下が表示され、`revenue_analysis.xlsx` / `missing_info.md` / `extraction_log.json` は生成されません。
+
+```
+[ドライラン] 入力抽出と診断を完了しました。計算・成果物生成はスキップしました。
+```
+
+PDF が safe failure になった場合も、dry-run 時は `extraction_log.json` を生成しません（exit 2）。
+
+### `extraction_log.json` の見方
+
+通常実行後に `output/extraction_log.json` が生成されます。主要フィールド：
+
+```json
+{
+  "extracted_units_count": 5,
+  "extraction_method": "pdf",
+  "gpi": 26016000,
+  "noi": 17215200,
+  "indicated_value": 360337777.78,
+  "missing_required_count": 0,
+  "missing_optional_count": 2,
+  "failure": true,          // safe failure 時のみ
+  "failure_reason": "..."   // safe failure 時のみ（日本語の説明文）
+}
+```
+
+> `indicated_value` は「収益試算値」であり、鑑定評価による「収益価格」ではありません。
 
 ---
 
@@ -202,18 +284,27 @@ python -m pip install -r requirements.txt
 ## 実行（PowerShell）
 
 ```powershell
-# Phase 1: ダミーCSVで実行
+# CSV 通常実行
 python src/main.py --assumptions assumptions.sample.yaml --output ./output
 
-# Phase 2.1(1): 合成レントロールPDFを生成（3パターン。pattern はファイル名から自動推測）
+# CSV dry-run（入力抽出と診断のみ。計算・成果物生成なし）
+python src/main.py --assumptions assumptions.sample.yaml --dry-run
+
+# 合成レントロールPDF生成（3パターン）
 python scripts/make_sample_pdf.py --output data/sample_rentroll_simple.pdf
 python scripts/make_sample_pdf.py --output data/sample_rentroll_missing_values.pdf
 python scripts/make_sample_pdf.py --output data/sample_rentroll_different_columns.pdf
 
-# Phase 2.1(2): PDFから抽出して計算
+# PDF 通常実行
 python src/main.py --assumptions assumptions.sample.yaml --rent-roll-pdf data/sample_rentroll_simple.pdf --output ./output
 python src/main.py --assumptions assumptions.sample.yaml --rent-roll-pdf data/sample_rentroll_missing_values.pdf --output ./output
 python src/main.py --assumptions assumptions.sample.yaml --rent-roll-pdf data/sample_rentroll_different_columns.pdf --output ./output
+
+# PDF dry-run（PDFが読み取れるか事前確認。計算・成果物生成なし）
+python src/main.py --assumptions assumptions.sample.yaml --rent-roll-pdf data/sample_rentroll_simple.pdf --dry-run
+
+# CLIオプション一覧
+python src/main.py --help
 ```
 
 > Windows のコンソールが文字化けする場合は `$env:PYTHONIOENCODING="utf-8"` を設定してください
@@ -235,16 +326,22 @@ GitHub公開・PR前に、以下が順に成功することを確認します。
 # 1. セットアップ
 python -m pip install -r requirements.txt
 
-# 2. CSV実行（Phase 1）
+# 2. CSV通常実行
 python src/main.py --assumptions assumptions.sample.yaml --output ./output
 
-# 3. PDF生成（Phase 2.1）
+# 3. CSV dry-run（計算・成果物なし）
+python src/main.py --assumptions assumptions.sample.yaml --dry-run
+
+# 4. PDF生成
 python scripts/make_sample_pdf.py --output data/sample_rentroll_simple.pdf
 
-# 4. PDF実行（Phase 2.1）
+# 5. PDF通常実行
 python src/main.py --assumptions assumptions.sample.yaml --rent-roll-pdf data/sample_rentroll_simple.pdf --output ./output
 
-# 5. テスト
+# 6. PDF dry-run
+python src/main.py --assumptions assumptions.sample.yaml --rent-roll-pdf data/sample_rentroll_simple.pdf --dry-run
+
+# 7. テスト
 python -m pytest -q
 
 # 6. 免責確認（出力に免責が入っていること）
@@ -260,9 +357,11 @@ Get-ChildItem -Recurse -Include *.py,*.md,*.yaml,*.json |
 | 確認項目 | 合格基準 |
 |---|---|
 | セットアップ | `pip install` がエラーなく完了 |
-| CSV実行 | 収益試算値が表示され、3出力が生成される |
+| CSV通常実行 | 収益試算値が表示され、3出力が生成される |
+| CSV dry-run | `[抽出診断]` が表示され、output files が生成されない |
 | PDF生成 | `data/sample_rentroll_simple.pdf` が生成される |
-| PDF実行 | PDF抽出→収益試算値が表示される |
+| PDF通常実行 | PDF抽出→収益試算値が表示される |
+| PDF dry-run | `[抽出診断]` が表示され、output files が生成されない |
 | pytest | 全件 passed |
 | 免責確認 | 「不動産鑑定評価ではありません」が出力に含まれる |
 | 用語確認 | 「収益価格」は否定文脈のみ（試算結果名は「収益試算値」） |
@@ -328,6 +427,6 @@ NOI（運営純収益）   = EGI − 運営費用合計
 
 ## バージョン・ライセンス
 
-**v0.2.0** — Apache License 2.0（Copyright 2026 km）
+**v0.3.0** — Apache License 2.0（Copyright 2026 km）
 
 変更履歴は [CHANGELOG.md](CHANGELOG.md) を参照してください。
