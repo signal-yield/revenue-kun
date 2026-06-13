@@ -66,7 +66,7 @@ _ROOM_HEADER_TOKENS: frozenset[str] = frozenset(t for t, k in _HEADER_KEYS if k 
 # Column headers containing these substrings are person/tenant-name columns.
 # They must not be mapped to 'status' even when they contain a status-adjacent
 # token such as "入居". Checked by _resolve_header_key before alias lookup.
-_PERSON_NAME_DENY: frozenset[str] = frozenset({"者名", "テナント名"})
+_PERSON_NAME_DENY: frozenset[str] = frozenset({"者名", "テナント名", "入居者"})
 
 
 @dataclass

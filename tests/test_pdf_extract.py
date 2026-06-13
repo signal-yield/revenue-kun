@@ -250,6 +250,7 @@ def test_all_vacant_null_rent_passes(tmp_path):
     ("入居者名",          None),
     ("契約者名",          None),
     ("テナント名",        None),
+    ("入居者",            None),
     # ── notes（新規 canonical key）──
     ("備考",            "notes"),
     ("メモ",            "notes"),
@@ -341,3 +342,39 @@ def test_standalone_nyukyo_header_recognized(tmp_path):
     assert len(occupied) == 1
     assert occupied[0].区画 == "101"
 
+
+def test_nyukyosha_header_not_mapped_to_status(tmp_path):
+    """入居者 header (occupant/person name) is not mapped to status."""
+    p = tmp_path / "nyukyosha.pdf"
+    headers = ["部屋番号", "入居者", "面積(㎡)", "月額賃料(円)", "共益費(円)", "入居状況"]
+    rows = [
+        ["101", "山田太郎", "30.0", "80,000", "8,000", "入居中"],
+        ["102", "",         "30.0", "",        "",       "空室"],
+    ]
+    build_pdf(p, headers, rows)
+    units, rep = extract_rent_roll_from_pdf(p)
+    # status must map to 入居状況 (col 5), not 入居者 (col 1)
+    assert rep.column_map.get("status") == 5
+    assert rep.rows_extracted == 2
+    occupied = [u for u in units if u.is_occupied]
+    assert len(occupied) == 1
+    assert occupied[0].区画 == "101"
+
+
+def test_nyukyosha_header_with_status_column(tmp_path):
+    """When 入居者 and ステータス both present, ステータス wins as status."""
+    p = tmp_path / "nyukyosha_status.pdf"
+    headers = ["部屋番号", "入居者", "面積(㎡)", "月額賃料(円)", "共益費(円)", "ステータス"]
+    rows = [
+        ["101", "山田太郎", "30.0", "80,000", "8,000", "入居中"],
+        ["102", "",         "30.0", "",        "",       "空室"],
+        ["103", "佐藤花子", "40.0", "100,000", "10,000", "入居中"],
+    ]
+    build_pdf(p, headers, rows)
+    units, rep = extract_rent_roll_from_pdf(p)
+    # ステータス is at col 5; 入居者 at col 1 must be blocked
+    assert rep.column_map.get("status") == 5
+    assert rep.rows_extracted == 3
+    occupied = [u for u in units if u.is_occupied]
+    assert len(occupied) == 2
+    assert {u.区画 for u in occupied} == {"101", "103"}
