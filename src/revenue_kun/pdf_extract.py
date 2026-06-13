@@ -47,11 +47,11 @@ _HEADER_KEYS: list[tuple[str, str]] = [
     ("common_fee", "cam"), ("common fee", "cam"), ("service charge", "cam"),
     ("cam", "cam"), ("管理", "cam"),
     # ── status（入居状況 / 稼働 / Occupancy）────────────────────────────
-    # "入居" alone is intentionally absent: it is a substring of tenant-name
-    # columns such as "入居者名", which would cause a false-positive mapping.
-    # Use more specific tokens that do not match person-name column patterns.
+    # Person/tenant-name columns (e.g. 入居者名) are pre-screened by
+    # _resolve_header_key via _PERSON_NAME_DENY, so "入居" can remain as
+    # a status alias for standalone headers such as "入居" or "入居/空室".
     ("ステータス", "status"),
-    ("空室", "status"), ("稼働", "status"), ("状況", "status"),
+    ("入居", "status"), ("空室", "status"), ("稼働", "status"), ("状況", "status"),
     ("occupancy", "status"), ("status", "status"),
     # ── notes（備考 / メモ / Remarks）── オプション列、現行処理では未使用
     ("備考", "notes"), ("メモ", "notes"), ("remarks", "notes"), ("notes", "notes"),
@@ -62,6 +62,11 @@ _REQUIRED_KEYS = {"room": "部屋番号", "rent": "月額賃料", "status": "入
 
 # room 列にマップされるヘッダートークン（繰り返しヘッダー行の判定に使う）
 _ROOM_HEADER_TOKENS: frozenset[str] = frozenset(t for t, k in _HEADER_KEYS if k == "room")
+
+# Column headers containing these substrings are person/tenant-name columns.
+# They must not be mapped to 'status' even when they contain a status-adjacent
+# token such as "入居". Checked by _resolve_header_key before alias lookup.
+_PERSON_NAME_DENY: frozenset[str] = frozenset({"者名", "テナント名"})
 
 
 @dataclass
@@ -146,11 +151,15 @@ def _resolve_header_key(cell: str | None) -> str | None:
     _HEADER_KEYS を先頭から走査し、token が cell（小文字化）に含まれる
     最初のエントリの key を返す（first-match）。
     fuzzy matching はしない。
+    _PERSON_NAME_DENY に該当するヘッダーは status にマップしない。
     """
     c = (_clean(cell) or "").lower()
     if not c:
         return None
+    is_person_name_col = any(tok in c for tok in _PERSON_NAME_DENY)
     for token, key in _HEADER_KEYS:
+        if key == "status" and is_person_name_col:
+            continue
         if token in c:
             return key
     return None

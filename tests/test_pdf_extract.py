@@ -245,8 +245,11 @@ def test_all_vacant_null_rent_passes(tmp_path):
     ("Status",          "status"),
     ("Occupancy",       "status"),
     ("ステータス",        "status"),  # Issue #29
-    # ── 入居者名 は status に誤マップしない（Issue #29）──
+    # ── 入居 は status にマップされる（standalone）; 入居者名/契約者名/テナント名 は除外（Issue #29 follow-up）──
+    ("入居",              "status"),
     ("入居者名",          None),
+    ("契約者名",          None),
+    ("テナント名",        None),
     # ── notes（新規 canonical key）──
     ("備考",            "notes"),
     ("メモ",            "notes"),
@@ -320,4 +323,21 @@ def test_status_column_wins_over_tenant_name(tmp_path):
     assert {u.区画 for u in occupied} == {"101", "103"}
     vacant = [u for u in units if not u.is_occupied]
     assert len(vacant) == 1
-    assert vacant[0].区画 == "102"
+    assert vacant[0].区画 == "102"
+
+def test_standalone_nyukyo_header_recognized(tmp_path):
+    """入居 standalone header is recognized as status (no tenant-name false positive)."""
+    p = tmp_path / "nyukyo_standalone.pdf"
+    headers = ["部屋番号", "面積(㎡)", "月額賃料(円)", "共益費(円)", "入居"]
+    rows = [
+        ["101", "30.0", "80,000", "8,000", "入居中"],
+        ["102", "30.0", "",       "",       "空室"],
+    ]
+    build_pdf(p, headers, rows)
+    units, rep = extract_rent_roll_from_pdf(p)
+    assert "status" in rep.column_map
+    assert rep.column_map["status"] == 4
+    occupied = [u for u in units if u.is_occupied]
+    assert len(occupied) == 1
+    assert occupied[0].区画 == "101"
+
