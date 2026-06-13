@@ -153,11 +153,14 @@ The column header `ステータス` (katakana transliteration of "status") is no
 `_HEADER_KEYS`. None of the registered status aliases (`入居`, `空室`, `稼働`, `occupancy`,
 `status`, `状況`) match `ステータス` as a substring.
 
-If `ステータス` were added as an alias, column 13 would be correctly mapped to `status`,
-yielding `稼働状況 = "入居"` for 17 units and `"空室"` for 3 units, and GPI ≈ 22,224,000 yen/year.
+Adding `ステータス` as a status alias is necessary but not sufficient by itself.
+Even if column 13 were recognized, the false-positive mapping of `入居者名` at column 4
+would still win first-match and consume the `status` slot before column 13 is reached.
+Correct resolution requires both adding the alias **and** suppressing the false positive,
+or introducing a deterministic candidate resolution rule when multiple status-like columns exist.
 
 **Pattern**: `ステータス` (common Japanese column header) not in alias table.
-**Effect**: status column at col 13 goes unrecognized; false positive at col 4 wins.
+**Effect**: status column at col 13 goes unrecognized; false positive at col 4 wins even if alias is added.
 
 ### Limitation 3 — Summary row `合 計` extracted as a unit row
 
@@ -215,12 +218,34 @@ status detection were working correctly.
 
 `future_issue_candidate`
 
-Two narrow, evidence-based follow-up issues are warranted:
+Two narrow, evidence-based follow-up issues are warranted.
+Neither is implemented in this evaluation branch.
 
-| # | Pattern | Suggested fix |
-|---|---------|---------------|
-| A | `ステータス` alias gap | Add `"ステータス"` (and optionally `"ステータス"` variants) to `_HEADER_KEYS` status aliases |
-| B | Summary row `合 計` not filtered | Add keyword-match check in `_is_non_data_row()` for `合計`/`合 計`/`小計`/`計` as room value |
+### Future Issue Candidate A — Improve Japanese status column detection
+
+Adding `ステータス` as a status alias is necessary but not sufficient by itself.
+The observed failure also requires suppressing the false-positive mapping of tenant-name
+columns such as `入居者名` to `status`, or introducing a deterministic candidate resolution
+rule when multiple status-like columns are present.
+
+Suggested scope for a future issue:
+
+- Add `ステータス` as a recognized status alias in `_HEADER_KEYS`.
+- Prevent tenant-name columns such as `入居者名` from being selected as `status`
+  (e.g., by excluding columns whose header contains a person-name suffix like `名`, or by
+  introducing an explicit deny-list for known non-status column patterns).
+- Define candidate priority or conflict resolution when multiple status candidates are
+  detected (e.g., prefer columns whose values match known status vocabulary over columns
+  whose header merely contains a status-adjacent substring).
+- Consider a confidence or validation rule: after header-based detection, verify that
+  the recognized status column contains expected vocabulary (`入居`, `空室`, `稼働`, etc.)
+  rather than accepting any column that matches by substring alone.
+
+### Future Issue Candidate B — Improve non-data-row filtering
+
+- Prevent total / summary rows such as `合 計` and `合計` from being treated as unit rows.
+- Extend `_is_non_data_row()` to match known summary-row labels (`合計`, `合 計`, `小計`, `計`)
+  in the room-number field.
 
 These should be filed as separate, narrowly scoped issues. No implementation should proceed
 without the issue being filed and reviewed first.
@@ -250,8 +275,12 @@ At least 1 qualifying real-world text-based rent roll PDF must be evaluated befo
 The revenue-kun v0.3.0 CLI processes this realistic anonymized rent roll PDF without crashing
 (exit 0). However, the evaluation reveals two `future_issue_candidate` patterns:
 
-1. **Status column alias gap**: `ステータス` is not recognized; `入居者名` is a false positive.
-   Result: GPI=0 (silent wrong result, no safe failure triggered).
+1. **Status column detection failure** (two interacting issues):
+   - `ステータス` (col 13, actual status) is not recognized — alias gap.
+   - `入居者名` (col 4, tenant name) is a false positive for `status` — first-match wins.
+   - Adding `ステータス` as an alias alone is not sufficient; the false positive at col 4
+     must also be suppressed, or a candidate resolution rule must be introduced.
+   - Result: GPI=0 (silent wrong result, no safe failure triggered).
 2. **Summary row not filtered**: `合 計` row extracted as a unit row.
 
 These findings are evidence-based and narrow enough to support future issue creation.
