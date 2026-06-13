@@ -68,6 +68,12 @@ _ROOM_HEADER_TOKENS: frozenset[str] = frozenset(t for t, k in _HEADER_KEYS if k 
 # token such as "入居". Checked by _resolve_header_key before alias lookup.
 _PERSON_NAME_DENY: frozenset[str] = frozenset({"者名", "テナント名", "入居者"})
 
+# Column headers containing these substrings are date-type columns (move-in date,
+# contract dates, etc.). They must not be mapped to 'status' even when they contain
+# a status-adjacent token such as "入居" (e.g. "入居日" contains "入居").
+# Checked by _resolve_header_key alongside _PERSON_NAME_DENY.
+_DATE_HEADER_DENY: frozenset[str] = frozenset({"入居日", "開始日", "満了日", "契約日"})
+
 
 @dataclass
 class ExtractionReport:
@@ -151,14 +157,17 @@ def _resolve_header_key(cell: str | None) -> str | None:
     _HEADER_KEYS を先頭から走査し、token が cell（小文字化）に含まれる
     最初のエントリの key を返す（first-match）。
     fuzzy matching はしない。
-    _PERSON_NAME_DENY に該当するヘッダーは status にマップしない。
+    _PERSON_NAME_DENY / _DATE_HEADER_DENY に該当するヘッダーは status にマップしない。
     """
     c = (_clean(cell) or "").lower()
     if not c:
         return None
-    is_person_name_col = any(tok in c for tok in _PERSON_NAME_DENY)
+    is_non_status_col = (
+        any(tok in c for tok in _PERSON_NAME_DENY)
+        or any(tok in c for tok in _DATE_HEADER_DENY)
+    )
     for token, key in _HEADER_KEYS:
-        if key == "status" and is_person_name_col:
+        if key == "status" and is_non_status_col:
             continue
         if token in c:
             return key
