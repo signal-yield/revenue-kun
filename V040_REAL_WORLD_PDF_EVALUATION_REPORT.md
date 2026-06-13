@@ -9,8 +9,15 @@ This report documents the evaluation of additional real-world text-based rent ro
 - **Baseline**: v0.2.0 introduced limited text-based PDF ingestion for simple rent roll tables. v0.3.0 added CLI diagnostics summary and `--dry-run` mode.
 - **Evaluation tools**: v0.3.0 `--dry-run` and diagnostics summary are the primary evaluation commands.
 - **PDF extraction scope**: not expanded during this evaluation. Scope decisions are deferred until findings are documented.
+- **Evaluation date**: 2026-06-13
 
 > **重要**: 本ツールは不動産鑑定評価ではありません。出力される金額は「収益試算値」であり、鑑定評価による「収益価格」ではありません。欠損項目は補完しません。
+
+### Evaluation result note
+
+The 3 samples evaluated are the existing v0.2.0 synthetic reportlab-generated PDFs, not additional real-world PDFs.
+`samples/private/` did not contain additional real-world rent roll PDFs at the time of this evaluation.
+v0.4.0 real-world evaluation is pending additional real-world samples being made available.
 
 ---
 
@@ -33,11 +40,11 @@ This report documents the evaluation of additional real-world text-based rent ro
 
 | Sample ID | Private location | Source type | Text-based or scanned | PII risk | Evaluation status | Notes |
 |-----------|-----------------|-------------|----------------------|----------|-------------------|-------|
-| sample-private-001 | `samples/private/` | real-world | TBD | TBD | not started | |
-| sample-private-002 | `samples/private/` | real-world | TBD | TBD | not started | |
-| sample-private-003 | `samples/private/` | real-world | TBD | TBD | not started | |
-| sample-private-004 | `samples/private/` | real-world | TBD | TBD | not started | |
-| sample-private-005 | `samples/private/` | real-world | TBD | TBD | not started | |
+| sample-private-001 | `samples/private/` | synthetic (v0.2.0 reportlab) | text-based | none | complete | Simple layout, 1 page |
+| sample-private-002 | `samples/private/` | synthetic (v0.2.0 reportlab) | text-based | none | complete | Japanese column name variation, 2 missing cells |
+| sample-private-003 | `samples/private/` | synthetic (v0.2.0 reportlab) | text-based | none | complete | Sub-header rows (floor zone headers), 2 excluded |
+| sample-private-004 | n/a | n/a | n/a | n/a | not available | No additional real-world PDF available |
+| sample-private-005 | n/a | n/a | n/a | n/a | not available | No additional real-world PDF available |
 
 > Private file names and paths that reveal sensitive information should not be committed. Use sample IDs in this report.
 
@@ -47,17 +54,13 @@ This report documents the evaluation of additional real-world text-based rent ro
 
 | Sample ID | text-based / scanned | pdfplumber table extraction | detected table count | recognized canonical fields | extracted unit count | excluded non-data rows | malformed monthly rent fields | safe failure behavior | `--dry-run` usefulness | `extraction_log.json` usefulness | PII / privacy notes | recommended action |
 |-----------|---------------------|---------------------------|---------------------|---------------------------|---------------------|----------------------|------------------------------|----------------------|----------------------|--------------------------------|--------------------|--------------------|
-| sample-private-001 | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD |
-| sample-private-002 | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD |
-| sample-private-003 | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD |
-| sample-private-004 | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD |
-| sample-private-005 | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD |
+| sample-private-001 | text-based | success | 1 | area, cam, rent, room, status, use | 8 | 0 | none observed | not triggered (exit 0) | useful — shows fields + unit count, no artifacts | generated (normal run); extracted_units_count=8; some optional fields null | none (synthetic) | `support_with_current_logic` |
+| sample-private-002 | text-based | success | 1 | area, cam, rent, room, status, use | 7 | 0 | 2 missing cells (not malformed rent format) | not triggered (exit 0) | useful | not checked in normal run | none (synthetic) | `support_with_current_logic` |
+| sample-private-003 | text-based | success | 1 | area, cam, rent, room, status, use | 6 | 2 (floor zone sub-header rows) | none observed | not triggered (exit 0) | useful — sub-header exclusion notes visible | not checked in normal run | none (synthetic) | `support_with_current_logic` |
 
 ---
 
 ## Extraction Diagnostics Results
-
-Record the CLI diagnostics summary for each sample. Run with the v0.3.0 `--dry-run` mode or normal execution.
 
 ### Success example
 
@@ -82,118 +85,93 @@ Record the CLI diagnostics summary for each sample. Run with the v0.3.0 `--dry-r
 #### sample-private-001
 
 ```text
-(fill after evaluation)
+[抽出診断]
+  入力形式       : PDF
+  認識フィールド  : area, cam, rent, room, status, use
+  抽出区画数     : 8
+[ドライラン] 入力抽出と診断を完了しました。計算・成果物生成はスキップしました。
 ```
 
 #### sample-private-002
 
 ```text
-(fill after evaluation)
+[抽出診断]
+  入力形式       : PDF
+  認識フィールド  : area, cam, rent, room, status, use
+  抽出区画数     : 7
+[ドライラン] 入力抽出と診断を完了しました。計算・成果物生成はスキップしました。
 ```
 
 #### sample-private-003
 
 ```text
-(fill after evaluation)
-```
-
-#### sample-private-004
-
-```text
-(fill after evaluation)
-```
-
-#### sample-private-005
-
-```text
-(fill after evaluation)
+(注記) 【1F区画】行を小見出し・ヘッダーと判定し除外しました。
+(注記) 【2F区画】行を小見出し・ヘッダーと判定し除外しました。
+[抽出診断]
+  入力形式       : PDF
+  認識フィールド  : area, cam, rent, room, status, use
+  抽出区画数     : 6
+[ドライラン] 入力抽出と診断を完了しました。計算・成果物生成はスキップしました。
 ```
 
 ---
 
 ## Dry-Run Results
 
-Record the result of running `revenue-kun --dry-run <pdf>` for each sample.
-
-| Field | Detail |
-|-------|--------|
-| command used | `revenue-kun --dry-run samples/private/<sample>.pdf assumptions.yaml` |
-| exit code | TBD |
-| diagnostics summary | TBD |
-| generated artifacts | TBD |
-| calculation skipped | TBD |
-| output understandable | TBD |
+Command pattern used: `python -m revenue_kun.cli --rent-roll-pdf <private-pdf> --assumptions assumptions.sample.yaml --dry-run`
 
 ### sample-private-001
 
 | Field | Detail |
 |-------|--------|
-| command used | |
-| exit code | |
-| diagnostics summary | |
-| generated artifacts | |
-| calculation skipped | |
-| output understandable | |
+| command used | `--rent-roll-pdf <sample-private-001> --assumptions assumptions.sample.yaml --dry-run` |
+| exit code | 0 |
+| diagnostics summary | input type PDF / 6 canonical fields recognized / 8 units extracted |
+| generated artifacts | none |
+| calculation skipped | yes |
+| output understandable | yes |
 
 ### sample-private-002
 
 | Field | Detail |
 |-------|--------|
-| command used | |
-| exit code | |
-| diagnostics summary | |
-| generated artifacts | |
-| calculation skipped | |
-| output understandable | |
+| command used | `--rent-roll-pdf <sample-private-002> --assumptions assumptions.sample.yaml --dry-run` |
+| exit code | 0 |
+| diagnostics summary | input type PDF / 6 canonical fields recognized / 7 units extracted |
+| generated artifacts | none |
+| calculation skipped | yes |
+| output understandable | yes |
 
 ### sample-private-003
 
 | Field | Detail |
 |-------|--------|
-| command used | |
-| exit code | |
-| diagnostics summary | |
-| generated artifacts | |
-| calculation skipped | |
-| output understandable | |
-
-### sample-private-004
-
-| Field | Detail |
-|-------|--------|
-| command used | |
-| exit code | |
-| diagnostics summary | |
-| generated artifacts | |
-| calculation skipped | |
-| output understandable | |
-
-### sample-private-005
-
-| Field | Detail |
-|-------|--------|
-| command used | |
-| exit code | |
-| diagnostics summary | |
-| generated artifacts | |
-| calculation skipped | |
-| output understandable | |
+| command used | `--rent-roll-pdf <sample-private-003> --assumptions assumptions.sample.yaml --dry-run` |
+| exit code | 0 |
+| diagnostics summary | input type PDF / 6 canonical fields recognized / 6 units extracted / 2 sub-header rows excluded |
+| generated artifacts | none |
+| calculation skipped | yes |
+| output understandable | yes — sub-header exclusion notes clearly visible |
 
 ---
 
 ## extraction_log.json Observations
 
-For each sample, record observations from `extraction_log.json` if generated.
+`extraction_log.json` is not generated during `--dry-run`. Checked via normal execution on sample-private-001 only.
 
-| Field | sample-private-001 | sample-private-002 | sample-private-003 | sample-private-004 | sample-private-005 |
-|-------|-------------------|--------------------|-------------------|-------------------|-------------------|
-| generated | TBD | TBD | TBD | TBD | TBD |
-| failure flag | TBD | TBD | TBD | TBD | TBD |
-| failure_reason | TBD | TBD | TBD | TBD | TBD |
-| extracted_units_count | TBD | TBD | TBD | TBD | TBD |
-| missing_cells_count | TBD | TBD | TBD | TBD | TBD |
-| usefulness | TBD | TBD | TBD | TBD | TBD |
-| issues found | TBD | TBD | TBD | TBD | TBD |
+| Field | sample-private-001 | sample-private-002 | sample-private-003 |
+|-------|-------------------|--------------------|-------------------|
+| generated | yes (normal run) | not checked | not checked |
+| failure flag | None (not False; expected False for success) | — | — |
+| failure_reason | None | — | — |
+| extracted_units_count | 8 | — | — |
+| missing_cells_count | None (not populated for PDF path) | — | — |
+| input_type | None (not populated for PDF path) | — | — |
+| column_map keys | [] (empty for PDF path) | — | — |
+| usefulness | partial — unit count useful; several optional fields null | — | — |
+| issues found | Some optional fields (`input_type`, `column_map`, `missing_cells_count`) not populated in PDF path | — | — |
+
+> Note: Optional field population gaps in the PDF path may be a candidate for a narrow future issue, but do not block current functionality.
 
 ---
 
@@ -204,7 +182,8 @@ For each sample, record observations from `extraction_log.json` if generated.
 - Use sample IDs (`sample-private-001` etc.) instead of real file names where possible.
 - Only sanitized summaries may be committed to this report.
 - `samples/private/` is gitignored and must remain so.
-- Verify with `git check-ignore -v samples/private/` before any commit.
+- Verified with `git check-ignore -v samples/private/` — confirmed at `.gitignore:19`.
+- All 3 evaluated samples are synthetic (reportlab-generated). No real PII was present.
 
 ---
 
@@ -221,29 +200,28 @@ For each sample, record observations from `extraction_log.json` if generated.
 
 ## Patterns Observed
 
-Fill after evaluation is complete.
-
-- **header alias gaps**: TBD
-- **rent format issues**: TBD
-- **sub-header patterns**: TBD
-- **repeated header patterns**: TBD
-- **layout problems**: TBD
-- **safe failure adequacy**: TBD
-- **diagnostics usability**: TBD
+- **header alias gaps**: None observed in evaluated samples. All 6 canonical fields (area, cam, rent, room, status, use) were recognized across all 3 samples.
+- **rent format issues**: None observed. Monthly rent fields were numeric and parseable in all samples.
+- **sub-header patterns**: Observed in sample-private-003. Floor zone sub-headers (【1F区画】, 【2F区画】) were correctly detected and excluded by existing logic.
+- **repeated header patterns**: Not observed in evaluated samples.
+- **layout problems**: None observed. All samples use simple single-table layouts.
+- **safe failure adequacy**: Not triggered in any sample. All 3 succeeded (exit 0). Safe failure behavior was not directly tested with failing samples in this evaluation.
+- **diagnostics usability**: High. `--dry-run` output clearly shows input type, recognized fields, unit count, and any exclusion notes. Useful for quick validation without generating output artifacts.
+- **extraction_log.json optional field gaps**: Some fields (`input_type`, `column_map`, `missing_cells_count`) are null in the PDF path. Not blocking, but worth noting for a potential narrow future issue.
 
 ---
 
 ## Scope Decision for Future Versions
 
-Fill after evaluation is complete. Select one or more outcomes.
+**Caveat**: All 3 evaluated samples are existing v0.2.0 synthetic PDFs. Real-world PDF evaluation has not yet been completed. The decisions below apply only to the synthetic samples evaluated.
 
-- [ ] no implementation needed — document current support boundaries
+- [x] no implementation needed — current v0.3.0 logic handles all 3 synthetic samples correctly
 - [ ] documentation-only update
 - [ ] one narrow implementation issue for v0.5.0
 - [ ] keep unsupported
-- [ ] defer broader PDF support indefinitely
+- [x] defer broader PDF support — pending real-world sample availability
 
-**Decision rationale**: (fill after evaluation)
+**Decision rationale**: Current v0.3.0 logic handles the 3 available synthetic samples without any changes. Real-world PDF evaluation is deferred until actual real-world rent roll PDFs are made available under `samples/private/`. A narrow future issue for `extraction_log.json` optional field population in the PDF path may be warranted, but this is not blocking.
 
 ---
 
@@ -266,12 +244,12 @@ The following are confirmed out of scope for v0.4.0:
 
 ## Acceptance Checklist
 
-- [ ] At least 3 samples evaluated if available
-- [ ] No private PDFs committed
-- [ ] No PII committed
-- [ ] `samples/private/` remains gitignored
-- [ ] Each sample has a recommended action
-- [ ] Dry-run results recorded
-- [ ] Extraction diagnostics recorded
-- [ ] Future implementation issues are narrow and evidence-based
-- [ ] No extraction logic changed
+- [x] At least 3 samples evaluated if available (3 synthetic samples evaluated; real-world samples not yet available)
+- [x] No private PDFs committed
+- [x] No PII committed
+- [x] `samples/private/` remains gitignored (confirmed at `.gitignore:19`)
+- [x] Each evaluated sample has a recommended action
+- [x] Dry-run results recorded
+- [x] Extraction diagnostics recorded
+- [x] Future implementation issues are narrow and evidence-based
+- [x] No extraction logic changed
