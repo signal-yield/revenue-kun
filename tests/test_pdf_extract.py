@@ -244,6 +244,9 @@ def test_all_vacant_null_rent_passes(tmp_path):
     ("契約状況",        "status"),
     ("Status",          "status"),
     ("Occupancy",       "status"),
+    ("ステータス",        "status"),  # Issue #29
+    # ── 入居者名 は status に誤マップしない（Issue #29）──
+    ("入居者名",          None),
     # ── notes（新規 canonical key）──
     ("備考",            "notes"),
     ("メモ",            "notes"),
@@ -258,3 +261,63 @@ def test_all_vacant_null_rent_passes(tmp_path):
 def test_resolve_header_key(cell, expected_key):
     """各ヘッダーセルが正しい canonical key に解決される（または None）。"""
     assert _resolve_header_key(cell) == expected_key
+
+# --- Japanese status column detection（Issue #29）─────────────────────────
+def test_japanese_status_column_recognized(tmp_path):
+    """ステータス column header is recognized as the status column."""
+    p = tmp_path / "status_jp.pdf"
+    headers = ["部屋番号", "面積(㎡)", "月額賃料(円)", "共益費(円)", "ステータス"]
+    rows = [
+        ["101", "30.0", "80,000", "8,000", "入居中"],
+        ["102", "30.0", "",       "",       "空室"],
+    ]
+    build_pdf(p, headers, rows)
+    units, rep = extract_rent_roll_from_pdf(p)
+    assert "status" in rep.column_map
+    assert rep.rows_extracted == 2
+    occupied = [u for u in units if u.is_occupied]
+    assert len(occupied) == 1
+    assert occupied[0].区画 == "101"
+    vacant = [u for u in units if not u.is_occupied]
+    assert len(vacant) == 1
+    assert vacant[0].区画 == "102"
+
+
+def test_tenant_name_column_not_mapped_to_status(tmp_path):
+    """入居者名 column is not mapped to status (false positive suppressed)."""
+    p = tmp_path / "tenant_name.pdf"
+    headers = ["部屋番号", "入居者名", "面積(㎡)", "月額賃料(円)", "共益費(円)", "入居状況"]
+    rows = [
+        ["101", "", "30.0", "80,000", "8,000", "入居"],
+        ["102", "", "30.0", "",       "",       "空室"],
+    ]
+    build_pdf(p, headers, rows)
+    units, rep = extract_rent_roll_from_pdf(p)
+    # status should map to 入居状況 (col 5), not 入居者名 (col 1)
+    assert rep.column_map.get("status") == 5
+    assert rep.rows_extracted == 2
+    assert sum(1 for u in units if u.is_occupied) == 1
+
+
+def test_status_column_wins_over_tenant_name(tmp_path):
+    """When both 入居者名 and ステータス are present, ステータス is selected as status."""
+    p = tmp_path / "status_conflict.pdf"
+    headers = ["部屋番号", "入居者名", "面積(㎡)", "月額賃料(円)", "共益費(円)", "ステータス"]
+    rows = [
+        ["101", "", "30.0", "80,000", "8,000", "入居中"],
+        ["102", "", "30.0", "80,000", "8,000", "空室"],
+        ["103", "", "40.0", "100,000", "10,000", "入居中"],
+    ]
+    build_pdf(p, headers, rows)
+    units, rep = extract_rent_roll_from_pdf(p)
+    # ステータス is at col 5, not 入居者名 at col 1
+    assert rep.column_map.get("status") == 5, (
+        f"status should map to col 5 (ステータス), got col {rep.column_map.get('status')}"
+    )
+    assert rep.rows_extracted == 3
+    occupied = [u for u in units if u.is_occupied]
+    assert len(occupied) == 2
+    assert {u.区画 for u in occupied} == {"101", "103"}
+    vacant = [u for u in units if not u.is_occupied]
+    assert len(vacant) == 1
+    assert vacant[0].区画 == "102"

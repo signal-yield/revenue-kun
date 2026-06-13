@@ -47,8 +47,12 @@ _HEADER_KEYS: list[tuple[str, str]] = [
     ("common_fee", "cam"), ("common fee", "cam"), ("service charge", "cam"),
     ("cam", "cam"), ("管理", "cam"),
     # ── status（入居状況 / 稼働 / Occupancy）────────────────────────────
-    ("入居", "status"), ("空室", "status"), ("稼働", "status"),
-    ("occupancy", "status"), ("status", "status"), ("状況", "status"),
+    # "入居" alone is intentionally absent: it is a substring of tenant-name
+    # columns such as "入居者名", which would cause a false-positive mapping.
+    # Use more specific tokens that do not match person-name column patterns.
+    ("ステータス", "status"),
+    ("空室", "status"), ("稼働", "status"), ("状況", "status"),
+    ("occupancy", "status"), ("status", "status"),
     # ── notes（備考 / メモ / Remarks）── オプション列、現行処理では未使用
     ("備考", "notes"), ("メモ", "notes"), ("remarks", "notes"), ("notes", "notes"),
 ]
