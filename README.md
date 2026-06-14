@@ -1,7 +1,13 @@
-# revenue-kun（収益還元クン） v0.3.0
+# revenue-kun（収益還元クン） v0.4.0
 
 直接還元法による**収益試算ツール**（CLI）。レントロールと前提条件から
 NOI（運営純収益）を算出し、**収益試算値**と感応度分析を出力します。
+
+> **v0.4.0 — PDF ingestion hardening**  
+> Japanese status column detection を強化し、tenant-name / date-type 列の false positive を抑制しました。  
+> total / summary 行（合計・小計・TOTAL 等）の除外フィルタを追加しました。  
+> realistic anonymized サンプルで rows=20 / occupied=17 / vacant=3 / GPI=2,030,000 円/月 を確認済みです。  
+> qualifying real-world PDF 評価は未完了（Issue #21 open）。実務検証済みとは表記しません。
 
 > **v0.3.0 — CLI UX and diagnostics**  
 > `--dry-run` モードと抽出診断サマリーを追加しました。PDF 抽出範囲は v0.2.0 と同じです。  
@@ -114,7 +120,7 @@ v0.2.0 では以下を追加し、PDF ingestion をさらに堅牢化してい�
 | `room`（部屋番号） | 部屋番号 / 号室 / 区画 / 室番号 / unit / room / room_no |
 | `rent`（月額賃料） | 月額賃料 / 賃料 / 月額 / 賃料額 / rent / monthly_rent |
 | `cam`（共益費） | 共益費 / 管理費 / 月額共益費 / common_fee / cam |
-| `status`（入居状況） | 入居状況 / 入居 / 空室 / 稼働 / 契約状況 / status / occupancy |
+| `status`（入居状況） | 入居状況 / ステータス / 入居 / 空室 / 稼働 / 契約状況 / status / occupancy （tenant-name・date 系列は除外） |
 | `area`（面積） | 面積 / 専有面積 / 賃貸面積 / area / floor_area |
 | `use`（用途） | 用途 / 使用用途 / use / usage |
 | `notes`（備考） | 備考 / 特記 / メモ / notes / remarks |
@@ -150,6 +156,45 @@ CLI stderr にも `[抽出診断]` として `failure_reason` が表示されま
 - ベンダー固有ヒューリスティック
 - PII マスキング
 - 鑑定評価・投資助言・法律助言
+
+## v0.4.0 — PDF ingestion hardening
+
+PDF 抽出の精度を改善しました。PDF 抽出範囲（text-based の単純な表形式 PDF）は v0.3.0 と同じです。
+
+| v0.4.0 改善内容 | 内容 | Issue / PR |
+|---|---|---|
+| Japanese status column detection 強化 | tenant-name 列（入居者名・テナント名等）および date-type 列（入居日・契約満了日等）が status として誤マッピングされる false positive を抑制。`_PERSON_NAME_DENY` / `_DATE_HEADER_DENY` で除外 | Issue #29 / PR #31–#35 |
+| `ステータス` column の認識 | カタカナの `ステータス` ヘッダーを status alias に追加 | Issue #29 / PR #31 |
+| total / summary 行の除外 | `合計`, `小計`, `総計`, `計`, `TOTAL`, `Subtotal` 等の集計行を unit row から除外。`ExtractionReport.notes` に記録 | Issue #30 / PR #37 |
+
+### v0.4.0 確認済み動作（realistic anonymized サンプル）
+
+| 項目 | 値 |
+|------|----|  
+| rows_extracted | 20（合計行1件除外済み） |
+| occupied units | 17 |
+| vacant units | 3 |
+| monthly GPI | 2,030,000 円 |
+| status column | col 13 (`ステータス`) |
+| synthetic samples regression | なし（3件確認） |
+
+> **注意**: v0.4.0 では qualifying real-world text-based rent roll PDF の評価が未完了です（Issue #21 open）。
+> 実務で使用する前に、対象 PDF を `--dry-run` で事前確認してください。
+
+### 除外対象となる status false-positive パターン（v0.4.0）
+
+| ヘッダー例 | 種別 | 除外方法 |
+|-----------|------|----------|
+| `入居者名`, `契約者名`, `テナント名`, `入居者` | person/tenant-name | `_PERSON_NAME_DENY` |
+| `入居日`, `入居開始日`, `契約開始日`, `契約満了日`, `契約日` | date-type | `_DATE_HEADER_DENY` |
+
+### 除外対象となる summary row ラベル（v0.4.0）
+
+`合計`, `合　計`（スペース含む）, `小計`, `総計`, `計`, `TOTAL`, `Total`, `total`, `Subtotal`, `SUBTOTAL`, `Sub total`, `subtotal`
+
+スペース除去・小文字化後に完全一致で判定します（部分一致しない）。
+
+---
 
 ## v0.3.0 — CLI UX and diagnostics
 
@@ -427,6 +472,6 @@ NOI（運営純収益）   = EGI − 運営費用合計
 
 ## バージョン・ライセンス
 
-**v0.3.0** — Apache License 2.0（Copyright 2026 km）
+**v0.4.0** — Apache License 2.0（Copyright 2026 km）
 
 変更履歴は [CHANGELOG.md](CHANGELOG.md) を参照してください。
