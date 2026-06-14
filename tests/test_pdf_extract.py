@@ -503,3 +503,91 @@ def test_multiple_summary_variants_excluded(tmp_path):
     assert "小計" not in labels
     assert "TOTAL" not in labels
     assert labels == ["101", "102"]
+
+
+# --- v0.4.1 hardening regression tests (Issue #44) ───────────────────────────
+
+@pytest.mark.parametrize("room_label", [
+    "合　計",   # 合　計 (full-width space)
+])
+def test_summary_row_fullwidth_space_variant(room_label):
+    """合　計 (full-width space) is identified as a non-data row."""
+    from revenue_kun.pdf_extract import _is_non_data_row
+    assert _is_non_data_row(room_label, [None, None], {"rent": 1})
+
+
+def test_summary_row_does_not_inflate_gpi(tmp_path):
+    """Summary row rent value is not included in the GPI (sum of occupied unit rents)."""
+    p = tmp_path / "gpi_check.pdf"
+    headers = ["部屋番号", "面積(㎡)", "月額賃料(円)", "共益費(円)", "ステータス"]
+    rows = [
+        ["101", "30.0", "80,000", "8,000",  "入居中"],
+        ["102", "30.0", "85,000", "9,000",  "入居中"],
+        ["103", "30.0", "",       "",        "空室"],
+        ["合 計", "", "165,000", "17,000", ""],  # 合 計 — must be excluded
+    ]
+    build_pdf(p, headers, rows)
+    units, rep = extract_rent_roll_from_pdf(p)
+    assert rep.rows_extracted == 3
+    occupied = [u for u in units if u.is_occupied]
+    assert len(occupied) == 2
+    gpi = sum(u.月額賃料_円 for u in occupied if u.月額賃料_円 is not None)
+    # 80,000 + 85,000 = 165,000; summary row 165,000 must NOT be added a second time
+    assert gpi == 165_000
+
+
+@pytest.mark.parametrize("text, expected", [
+    # occupied variants
+    ("入居中",  "入居"),   # 入居中 → 入居
+    ("稼働中",  "入居"),   # 稼働中 → 入居
+    ("賃貸中",  "入居"),   # 賃貸中 → 入居
+    ("使用中",  "入居"),   # 使用中 → 入居
+    # vacant variants
+    ("空室",        "空室"),   # 空室 → 空室
+    ("空き室",  "空室"),   # 空き室 → 空室
+    ("募集中",  "空室"),   # 募集中 → 空室
+    # raw passthrough (no alias)
+    ("満室",        "満室"),   # 満室 → raw passthrough
+    # None
+    (None, None),
+])
+def test_normalize_status(text, expected):
+    """Status values normalize to expected canonical strings."""
+    from revenue_kun.pdf_extract import _normalize_status
+    assert _normalize_status(text) == expected
+
+
+def test_status_value_boshuchuu_is_vacant(tmp_path):
+    """募集中 status value normalizes to 空室 (not counted as occupied)."""
+    p = tmp_path / "boshuchuu.pdf"
+    headers = ["部屋番号", "面積(㎡)", "月額賃料(円)", "共益費(円)", "入居状況"]
+    rows = [
+        ["101", "30.0", "80,000", "8,000", "入居中"],   # 入居中
+        ["102", "30.0", "",       "",       "募集中"],   # 募集中
+        ["103", "30.0", "",       "",       "空室"],          # 空室
+    ]
+    build_pdf(p, headers, rows)
+    units, rep = extract_rent_roll_from_pdf(p)
+    assert rep.rows_extracted == 3
+    occupied = [u for u in units if u.is_occupied]
+    assert len(occupied) == 1
+    assert occupied[0].区画 == "101"
+    vacant = [u for u in units if not u.is_occupied]
+    assert len(vacant) == 2
+    assert {u.区画 for u in vacant} == {"102", "103"}
+
+
+def test_kei_in_non_room_field_does_not_exclude_row(tmp_path):
+    """A row is not excluded when 計 appears in a non-room field (notes/remarks).
+    Only the room field is checked for summary-row matching."""
+    p = tmp_path / "kei_in_notes.pdf"
+    headers = ["部屋番号", "面積(㎡)", "月額賃料(円)", "共益費(円)", "入居状況", "備考"]
+    rows = [
+        ["101", "30.0", "80,000", "8,000", "入居中", "管理費計上済み"],  # 計 in notes
+        ["102", "30.0", "85,000", "9,000", "入居中", "合計含む"],        # 合計 in notes
+        ["103", "30.0", "",       "",       "空室",   ""],
+    ]
+    build_pdf(p, headers, rows)
+    units, rep = extract_rent_roll_from_pdf(p)
+    assert rep.rows_extracted == 3
+    assert {u.区画 for u in units} == {"101", "102", "103"}

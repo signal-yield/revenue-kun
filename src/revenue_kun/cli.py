@@ -1,4 +1,4 @@
-"""収益還元クン (revenue-kun) v0.1 CLI ロジック。
+"""収益還元クン (revenue-kun) CLI ロジック。
 
 エントリポイントは `src/main.py`。実行例:
   python src/main.py --assumptions assumptions.sample.yaml --output ./output
@@ -61,7 +61,7 @@ def _print_diagnostics_summary(
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="revenue-kun",
-        description="収益還元クン: 直接還元法による収益試算ツール v0.1（鑑定評価ではありません）",
+        description="収益還元クン: 直接還元法による収益試算ツール（鑑定評価ではありません）",
     )
     p.add_argument("--assumptions", default=str(ROOT / "assumptions.sample.yaml"),
                    help="前提条件YAMLのパス")
