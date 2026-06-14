@@ -74,6 +74,11 @@ _PERSON_NAME_DENY: frozenset[str] = frozenset({"者名", "テナント名", "入
 # Checked by _resolve_header_key alongside _PERSON_NAME_DENY.
 _DATE_HEADER_DENY: frozenset[str] = frozenset({"入居日", "開始日", "満了日", "契約日"})
 
+# Room-field values (after collapsing whitespace, lowercased) that identify a
+# total / subtotal row. Matched as full string equality, not substring, to avoid
+# accidentally dropping room numbers that happen to contain these characters.
+_SUMMARY_ROW_LABELS: frozenset[str] = frozenset({"合計", "小計", "総計", "計", "total", "subtotal"})
+
 
 @dataclass
 class ExtractionReport:
@@ -126,12 +131,14 @@ def _normalize_status(text: str | None) -> str | None:
 
 
 def _is_non_data_row(room: str, raw: list[str | None], col_map: dict[str, int]) -> bool:
-    """小見出し・繰り返しヘッダー行と判定される場合に True を返す。
+    """小見出し・繰り返しヘッダー行・集計行と判定される場合に True を返す。
 
     判定基準（いずれか一方）:
     1. 区画フィールドが括弧で始まる小見出し（例: 【1F区画】, [2F]）
     2. 区画フィールドがヘッダートークンを含み、かつ賃料列も非数値文字列である繰り返しヘッダー行
        ※ 賃料が空欄（None）の空室行は条件2の対象外とし、誤除外しない。
+    3. 区画フィールドが既知の集計ラベル（合計・小計・総計・計・TOTAL 等）と完全一致する行
+       ※ スペース除去・小文字化後に _SUMMARY_ROW_LABELS と照合する（部分一致しない）。
     """
     # 1. 括弧で始まる小見出し（全角【】・半角[]・全角（）・半角()）
     if re.match(r'^[【\[\(（]', room):
@@ -147,6 +154,11 @@ def _is_non_data_row(room: str, raw: list[str | None], col_map: dict[str, int]) 
             rent_raw = _clean(raw[rent_idx])
             if rent_raw is not None and _to_number(rent_raw) is None:
                 return True
+
+    # 3. 集計行（全角/半角スペースを除去して小文字化したあと既知のラベルと完全一致）
+    room_normalized = re.sub(r'[\s　]+', '', room).lower()
+    if room_normalized in _SUMMARY_ROW_LABELS:
+        return True
 
     return False
 

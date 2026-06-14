@@ -426,3 +426,80 @@ def test_move_in_date_header_with_status_column(tmp_path):
     vacant = [u for u in units if not u.is_occupied]
     assert len(vacant) == 1
     assert vacant[0].区画 == "103"
+
+
+# --- Issue #30: total / summary row filtering ──────────────────────────────────
+
+@pytest.mark.parametrize("room_label", [
+    "合 計",
+    "合計",
+    "小計",
+    "総計",
+    "計",
+    "TOTAL",
+    "Total",
+    "total",
+    "Subtotal",
+    "SUBTOTAL",
+    "Sub total",
+    "subtotal",
+])
+def test_summary_row_label_is_non_data_row(room_label):
+    """Known summary row labels are identified as non-data rows."""
+    from revenue_kun.pdf_extract import _is_non_data_row
+    # rent=None so condition 2 (repeated header) does not fire
+    assert _is_non_data_row(room_label, [None, None], {"rent": 1})
+
+
+@pytest.mark.parametrize("room_label", [
+    "101",
+    "201",
+    "A-101",
+    "1F-01",
+    "計画棟101",
+    "合計算",
+])
+def test_normal_room_label_is_not_non_data_row(room_label):
+    """Normal room numbers containing summary-like substrings are not excluded."""
+    from revenue_kun.pdf_extract import _is_non_data_row
+    assert not _is_non_data_row(room_label, [None, None], {"rent": 1})
+
+
+def test_summary_row_excluded_from_extraction(tmp_path):
+    """合 計 row is excluded; remaining 20 rows include 17 occupied and 3 vacant."""
+    p = tmp_path / "with_total.pdf"
+    headers = ["部屋番号", "面積(㎡)", "月額賃料(円)", "共益費(円)", "ステータス"]
+    rows = [
+        ["101", "30.0", "80,000", "8,000", "入居中"],
+        ["102", "30.0", "85,000", "9,000", "入居中"],
+        ["103", "30.0", "",        "",       "空室"],
+        ["合 計", "",     "165,000", "17,000", ""],  # must be excluded
+    ]
+    build_pdf(p, headers, rows)
+    units, rep = extract_rent_roll_from_pdf(p)
+    assert rep.rows_extracted == 3
+    area_labels = [u.区画 for u in units]
+    assert "合 計" not in area_labels
+    occupied = [u for u in units if u.is_occupied]
+    assert len(occupied) == 2
+    vacant = [u for u in units if not u.is_occupied]
+    assert len(vacant) == 1
+
+
+def test_multiple_summary_variants_excluded(tmp_path):
+    """合計, 小計, TOTAL variants are all excluded from extraction."""
+    p = tmp_path / "multi_total.pdf"
+    headers = ["部屋番号", "面積(㎡)", "月額賃料(円)", "共益費(円)", "入居状況"]
+    rows = [
+        ["101", "30.0", "80,000", "8,000", "入居中"],
+        ["小計", "", "80,000", "8,000", ""],
+        ["102", "30.0", "85,000", "9,000", "入居中"],
+        ["TOTAL", "", "165,000", "17,000", ""],
+    ]
+    build_pdf(p, headers, rows)
+    units, rep = extract_rent_roll_from_pdf(p)
+    assert rep.rows_extracted == 2
+    labels = [u.区画 for u in units]
+    assert "小計" not in labels
+    assert "TOTAL" not in labels
+    assert labels == ["101", "102"]
