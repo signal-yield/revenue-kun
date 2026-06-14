@@ -439,6 +439,10 @@ def test_move_in_date_header_with_status_column(tmp_path):
     "TOTAL",
     "Total",
     "total",
+    "Subtotal",
+    "SUBTOTAL",
+    "Sub total",
+    "subtotal",
 ])
 def test_summary_row_label_is_non_data_row(room_label):
     """Known summary row labels are identified as non-data rows."""

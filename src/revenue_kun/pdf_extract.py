@@ -77,7 +77,7 @@ _DATE_HEADER_DENY: frozenset[str] = frozenset({"入居日", "開始日", "満了
 # Room-field values (after collapsing whitespace, lowercased) that identify a
 # total / subtotal row. Matched as full string equality, not substring, to avoid
 # accidentally dropping room numbers that happen to contain these characters.
-_SUMMARY_ROW_LABELS: frozenset[str] = frozenset({"合計", "小計", "総計", "計", "total"})
+_SUMMARY_ROW_LABELS: frozenset[str] = frozenset({"合計", "小計", "総計", "計", "total", "subtotal"})
 
 
 @dataclass
