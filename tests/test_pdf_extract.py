@@ -575,3 +575,19 @@ def test_status_value_boshuchuu_is_vacant(tmp_path):
     vacant = [u for u in units if not u.is_occupied]
     assert len(vacant) == 2
     assert {u.区画 for u in vacant} == {"102", "103"}
+
+
+def test_kei_in_non_room_field_does_not_exclude_row(tmp_path):
+    """A row is not excluded when 計 appears in a non-room field (notes/remarks).
+    Only the room field is checked for summary-row matching."""
+    p = tmp_path / "kei_in_notes.pdf"
+    headers = ["部屋番号", "面積(㎡)", "月額賃料(円)", "共益費(円)", "入居状況", "備考"]
+    rows = [
+        ["101", "30.0", "80,000", "8,000", "入居中", "管理費計上済み"],  # 計 in notes
+        ["102", "30.0", "85,000", "9,000", "入居中", "合計含む"],        # 合計 in notes
+        ["103", "30.0", "",       "",       "空室",   ""],
+    ]
+    build_pdf(p, headers, rows)
+    units, rep = extract_rent_roll_from_pdf(p)
+    assert rep.rows_extracted == 3
+    assert {u.区画 for u in units} == {"101", "102", "103"}
