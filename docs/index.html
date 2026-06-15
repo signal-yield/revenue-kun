@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>revenue-kun — レントロールから直接還元法 Excel ワークブックを、コマンド一行で。</title>
+  <meta name="description" content="revenue-kun: レントロール（CSV・text-based PDF）から直接還元法 Excel ワークブックを生成する OSS CLI ツール。収益試算値の算出と欠損管理をサポートします。鑑定評価ではありません。" />
+  <meta property="og:title" content="revenue-kun — 直接還元法 Excel 出力 CLI" />
+  <meta property="og:description" content="レントロールから直接還元法 Excel ワークブックを、コマンド一行で。OSS — Apache 2.0" />
+  <meta property="og:type" content="website" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━ Header ━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<header class="site-header">
+  <div class="container">
+    <span class="logo">revenue-kun</span>
+    <nav>
+      <a href="https://github.com/signal-yield/revenue-kun" class="nav-link">GitHub →</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ━━━━━━━━━━━━━━━━━━ Section 1: Hero ━━━━━━━━━━━━━━━━━━━━━━━ -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-badge">
+      <span class="badge badge-oss">OSS</span>
+      <span class="badge badge-license">Apache 2.0</span>
+      <span class="badge badge-version">v0.4.1</span>
+    </div>
+    <h1 class="hero-headline">
+      レントロールから<br>
+      直接還元法 Excel ワークブックを、<br>
+      コマンド一行で。
+    </h1>
+    <p class="hero-sub">
+      revenue-kun: open-source direct-capitalization CLI for rent roll verification.<br>
+      Generate a structured Excel workbook — OER / expense detail / rent roll — in one command.
+    </p>
+    <div class="warn-badge">
+      <span class="warn-icon">⚠</span>
+      <span>出力される金額は「収益試算値」であり、鑑定評価による「収益価格」ではありません。</span>
+    </div>
+    <div class="hero-cta">
+      <a href="https://github.com/signal-yield/revenue-kun" class="btn btn-primary">GitHub で見る</a>
+      <a href="https://github.com/signal-yield/revenue-kun#readme" class="btn btn-secondary">README を読む</a>
+    </div>
+  </div>
+</section>
+
+<!-- ━━━━━━━━━━━━━━━━ Section 2: Problem ━━━━━━━━━━━━━━━━━━━━━━ -->
+<section class="section section-problem">
+  <div class="container">
+    <h2>こんな手作業、まだやっていますか？</h2>
+    <div class="problem-grid">
+      <div class="problem-card">
+        <div class="problem-icon">📋</div>
+        <p>収益物件の簡易試算を、Excel で毎回一から手作業で作っている</p>
+      </div>
+      <div class="problem-card">
+        <div class="problem-icon">🔗</div>
+        <p>月計・年計・OER へのセルリンクを毎回手で組んでいる</p>
+      </div>
+      <div class="problem-card">
+        <div class="problem-icon">✏️</div>
+        <p>空室率・還元利回りを変えるたびに手修正が発生する</p>
+      </div>
+      <div class="problem-card">
+        <div class="problem-icon">📄</div>
+        <p>PDF のレントロールをそのまま読み込む仕組みが手元にない</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ━━━━━━━━━━━━━━━ Section 3: Features ━━━━━━━━━━━━━━━━━━━━━━ -->
+<section class="section section-features">
+  <div class="container">
+    <h2>revenue-kun にできること</h2>
+    <table class="feature-table">
+      <thead>
+        <tr>
+          <th>機能</th>
+          <th>内容</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>レントロール読み込み</td>
+          <td>CSV または text-based PDF（pdfplumber による抽出）</td>
+        </tr>
+        <tr>
+          <td>NOI 計算</td>
+          <td>GPI / EGI / NOI / 純収益（還元対象）を算出</td>
+        </tr>
+        <tr>
+          <td>収益試算値</td>
+          <td>直接還元法（純収益 ÷ 還元利回り）— 鑑定評価ではありません</td>
+        </tr>
+        <tr>
+          <td>感応度分析</td>
+          <td>NOI × 還元利回りのマトリクス出力</td>
+        </tr>
+        <tr>
+          <td>Excel 出力</td>
+          <td><code>--excel-output</code> で3シート .xlsx を生成</td>
+        </tr>
+        <tr>
+          <td>欠損の扱い</td>
+          <td>自動補完しない。欠損項目は <code>missing_info.md</code> に明示記録</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ━━━━━━━━━━━━━━━━ Section 4: Demo ━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<section class="section section-demo">
+  <div class="container">
+    <h2>ワークブックを開くとこうなる <span class="label-synth">合成データ</span></h2>
+    <p class="section-sub">
+      以下はすべて <code>scripts/make_sample_pdf.py</code> が生成した合成サンプルデータです。
+      実物件・実テナント名・個人情報は含みません。
+    </p>
+
+    <div class="code-block">
+      <div class="code-header">PowerShell</div>
+      <pre><code>python src/main.py `
+  --assumptions assumptions.sample.yaml `
+  --rent-roll-pdf data/sample_rentroll_simple.pdf `
+  --output ./output `
+  --excel-output ./output/direct_cap.xlsx</code></pre>
+    </div>
+
+    <div class="sheet-tabs-label">生成される 3 シート（合成データ）</div>
+    <div class="sheet-cards">
+
+      <!-- Sheet 1: OER -->
+      <div class="sheet-card">
+        <div class="sheet-tab">直接還元法_OER</div>
+        <div class="sheet-body">
+          <p class="sheet-desc">
+            年額収入セル（E2/E3/E5/E6/E7）が <code>読み取りレントロール</code> の年計行を自動参照。
+            空室損失率・還元利回り等はユーザーが手入力。
+          </p>
+          <table class="mini-sheet">
+            <thead>
+              <tr><th>D列（項目）</th><th>E列（年額）</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>年額貸室賃料収入</td><td>=読み取りレントロール!C8</td></tr>
+              <tr><td>年額共益費収入</td><td>=読み取りレントロール!D8</td></tr>
+              <tr><td>（ユーザー定義行）</td><td>—</td></tr>
+              <tr><td>年額水道光熱費収入</td><td>=読み取りレントロール!E8</td></tr>
+              <tr><td>年額駐車場収入</td><td>=読み取りレントロール!F8</td></tr>
+              <tr><td>その他収入</td><td>=読み取りレントロール!G8</td></tr>
+              <tr class="user-row"><td>空室損失率</td><td>← 手入力</td></tr>
+              <tr class="user-row"><td>駐車場等の空室損失率</td><td>← 手入力</td></tr>
+              <tr class="user-row"><td>貸倒損失</td><td>← 手入力</td></tr>
+              <tr class="user-row"><td>還元利回り</td><td>← 手入力</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Sheet 2: Expense -->
+      <div class="sheet-card">
+        <div class="sheet-tab">直接還元法‗費用詳細版</div>
+        <div class="sheet-body">
+          <p class="sheet-desc">
+            管理費・修繕費・損害保険料・固定資産税等をユーザーが手入力する欄。
+            CLI では自動入力されません。
+          </p>
+          <table class="mini-sheet">
+            <thead>
+              <tr><th>費目</th><th>年額（円）</th></tr>
+            </thead>
+            <tbody>
+              <tr class="user-row"><td>管理費・管理委託費</td><td>← 手入力</td></tr>
+              <tr class="user-row"><td>修繕費</td><td>← 手入力</td></tr>
+              <tr class="user-row"><td>損害保険料</td><td>← 手入力</td></tr>
+              <tr class="user-row"><td>固定資産税・都市計画税</td><td>← 手入力</td></tr>
+              <tr class="user-row"><td>その他費用</td><td>← 手入力</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Sheet 3: Rent Roll -->
+      <div class="sheet-card">
+        <div class="sheet-tab">読み取りレントロール</div>
+        <div class="sheet-body">
+          <p class="sheet-desc">
+            PDF から抽出した区画データ・月計・年計。
+            空室区画の備考欄が自動的に「ユーザーが賃料等を入力可能」に設定されます。
+          </p>
+          <table class="mini-sheet">
+            <thead>
+              <tr><th>部屋</th><th>状態</th><th>月額賃料</th><th>備考</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>A101</td><td>入居</td><td>138,000</td><td>—</td></tr>
+              <tr><td>A102</td><td>入居</td><td>168,000</td><td>—</td></tr>
+              <tr><td>A103</td><td>入居</td><td>150,000</td><td>—</td></tr>
+              <tr class="vacant-row"><td>A201</td><td>空室</td><td>—</td><td>ユーザーが賃料等を入力可能</td></tr>
+              <tr><td>B101</td><td>入居</td><td>320,000</td><td>—</td></tr>
+              <tr class="total-row"><td colspan="2">月計</td><td>=SUM(C2:C6)</td><td>月額合計</td></tr>
+              <tr class="total-row"><td colspan="2">年計</td><td>=C7*12</td><td>年額合計</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ━━━━━━━━━━━━━━━ Section 5: Workflow ━━━━━━━━━━━━━━━━━━━━━━ -->
+<section class="section section-workflow">
+  <div class="container">
+    <h2>使い方の流れ</h2>
+    <ol class="workflow-steps">
+      <li>
+        <span class="step-num">1</span>
+        <div>
+          <strong>CLI で <code>--excel-output</code> を実行</strong><br>
+          レントロール CSV または text-based PDF のパスを指定して実行します。
+        </div>
+      </li>
+      <li>
+        <span class="step-num">2</span>
+        <div>
+          <strong>読み取りレントロールシートで抽出値を確認</strong><br>
+          欠損セルがある場合は <code>missing_info.md</code> と照合して確認します。
+        </div>
+      </li>
+      <li>
+        <span class="step-num">3</span>
+        <div>
+          <strong>空室区画の想定賃料等を手入力</strong><br>
+          空室行の備考に「ユーザーが賃料等を入力可能」と表示されます。賃料・共益費を入力してください。
+        </div>
+      </li>
+      <li>
+        <span class="step-num">4</span>
+        <div>
+          <strong>費用詳細版シートに費用明細を入力</strong><br>
+          管理費・修繕費・損害保険料・固定資産税等を年額で入力します。
+        </div>
+      </li>
+      <li>
+        <span class="step-num">5</span>
+        <div>
+          <strong>OER シートで仮定値を入力</strong><br>
+          空室損失率・貸倒損失・経費率・資本的支出・還元利回りを入力します。
+        </div>
+      </li>
+      <li>
+        <span class="step-num">6</span>
+        <div>
+          <strong>収益試算値を確認・専門家にレビュー依頼</strong><br>
+          出力は収益試算値です。正式な鑑定評価・投資判断・法律的判断には専門家への確認が必要です。
+        </div>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<!-- ━━━━━━━━━━━━━━ Section 6: What to edit ━━━━━━━━━━━━━━━━━━━ -->
+<section class="section section-edit">
+  <div class="container">
+    <h2>Excel で編集できる箇所</h2>
+    <div class="edit-cards">
+      <div class="edit-card">
+        <h3>読み取りレントロール</h3>
+        <ul>
+          <li>空室区画の月額賃料</li>
+          <li>月額共益費</li>
+          <li>月額水道光熱費</li>
+          <li>月額駐車場</li>
+          <li>月額その他収入</li>
+        </ul>
+      </div>
+      <div class="edit-card">
+        <h3>直接還元法‗費用詳細版</h3>
+        <ul>
+          <li>管理費・管理委託費</li>
+          <li>修繕費</li>
+          <li>損害保険料</li>
+          <li>固定資産税・都市計画税</li>
+          <li>その他費用</li>
+        </ul>
+      </div>
+      <div class="edit-card">
+        <h3>直接還元法_OER</h3>
+        <ul>
+          <li>空室損失率</li>
+          <li>駐車場等の空室損失率</li>
+          <li>貸倒損失</li>
+          <li>経費率</li>
+          <li>資本的支出</li>
+          <li>還元利回り</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ━━━━━━━━━━━━━━ Section 7: Limitations ━━━━━━━━━━━━━━━━━━━━ -->
+<section class="section section-limitations">
+  <div class="container">
+    <h2>⚠ 制限事項</h2>
+    <table class="limits-table">
+      <thead>
+        <tr>
+          <th>制限</th>
+          <th>内容</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>OCR / スキャン PDF</td>
+          <td>対象外。text-based PDF のみ（pdfplumber による抽出）。</td>
+        </tr>
+        <tr>
+          <td>qualifying real-world PDF</td>
+          <td>
+            評価未完了（<a href="https://github.com/signal-yield/revenue-kun/issues/21">Issue #21 open</a>）。
+            実務検証済みとは表記しません。
+          </td>
+        </tr>
+        <tr>
+          <td>複数ページ PDF・複雑な結合セル</td>
+          <td>対象外。現バージョンの抽出スコープ外です。</td>
+        </tr>
+        <tr>
+          <td>鑑定評価</td>
+          <td>対象外。出力は「収益試算値」であり「収益価格（鑑定評価額）」ではありません。</td>
+        </tr>
+        <tr>
+          <td>投資助言・法律助言・税務助言</td>
+          <td>提供しません。正式な判断には専門家に確認してください。</td>
+        </tr>
+        <tr>
+          <td>欠損の自動補完</td>
+          <td>実施しません。欠損は <code>missing_info.md</code> に記録します。ユーザーが確認・入力してください。</td>
+        </tr>
+        <tr>
+          <td>GUI / Web UI</td>
+          <td>未実装。v0.4.1 は CLI のみです。</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ━━━━━━━━━━━━━━━━ Section 8: CTA ━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<section class="section section-cta">
+  <div class="container">
+    <h2>GitHub で確認・試す</h2>
+    <div class="cta-cards">
+      <div class="cta-card">
+        <h3>GitHub リポジトリ</h3>
+        <p>ソースコード・README・ライセンス（Apache 2.0）を確認できます。</p>
+        <a href="https://github.com/signal-yield/revenue-kun" class="btn btn-primary">リポジトリを見る</a>
+      </div>
+      <div class="cta-card">
+        <h3>合成サンプルを試す</h3>
+        <p>
+          <code>data/sample_rentroll_simple.pdf</code> と
+          <code>assumptions.sample.yaml</code> で動作確認できます。
+          README の使い方セクションを参照してください。
+        </p>
+        <a href="https://github.com/signal-yield/revenue-kun#readme" class="btn btn-secondary">README で手順を見る</a>
+      </div>
+      <div class="cta-card">
+        <h3>検証に参加する</h3>
+        <p>
+          qualifying real-world text-based rent roll PDF をお持ちの方との
+          協調検証を募っています（Issue #21）。
+        </p>
+        <a href="https://github.com/signal-yield/revenue-kun/issues/21" class="btn btn-outline">Issue #21 を見る</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ━━━━━━━━━━━━━━ Section 9: Disclaimer ━━━━━━━━━━━━━━━━━━━━━━ -->
+<section class="section section-disclaimer">
+  <div class="container">
+    <h2>免責事項 / Disclaimer</h2>
+    <div class="disclaimer-box">
+      <p>
+        本ツールは不動産鑑定評価ではありません。出力される金額は「収益試算値」であり、
+        鑑定評価による「収益価格」ではありません。欠損項目は推測補完しません。
+        正式な鑑定評価・価格判断・投資判断・法律的判断が必要な場合は、
+        不動産鑑定士・弁護士・税理士その他の専門家に確認してください。
+        qualifying real-world text-based rent roll PDF の評価は未完了です。
+        実務検証済みとは表記しません。
+      </p>
+      <hr />
+      <p>
+        <em>
+          This tool is not a real estate appraisal. All output values are revenue estimates
+          (収益試算値) and do not constitute appraised values (鑑定評価額).
+          Missing items are not automatically filled in.
+          For formal appraisal, pricing decisions, investment decisions, or legal / tax advice,
+          consult a qualified professional.
+          Evaluation against qualifying real-world text-based rent roll PDFs is not yet complete.
+        </em>
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ━━━━━━━━━━━━━━━━━━ Footer ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<footer class="site-footer">
+  <div class="container">
+    <p>
+      revenue-kun v0.4.1 &nbsp;·&nbsp; Apache 2.0 License &nbsp;·&nbsp;
+      <a href="https://github.com/signal-yield/revenue-kun">GitHub</a>
+    </p>
+    <p class="footer-issues">
+      #19 remains open &nbsp;·&nbsp; #21 remains open &nbsp;·&nbsp; #48 remains open
+    </p>
+  </div>
+</footer>
+
+</body>
+</html>
