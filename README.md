@@ -1,7 +1,13 @@
-# revenue-kun（収益還元クン） v0.4.0
+# revenue-kun（収益還元クン） v0.4.1
 
 直接還元法による**収益試算ツール**（CLI）。レントロールと前提条件から
 NOI（運営純収益）を算出し、**収益試算値**と感応度分析を出力します。
+オプションで直接還元法 Excel ワークブック（`.xlsx`）を生成できます。
+
+> **v0.4.1 以降 — 直接還元法 Excel ワークブック出力（`--excel-output`）**  
+> `--excel-output <path>` を指定すると、抽出したレントロール行から3シート構成の直接還元法 Excel ワークブックを生成します。  
+> 詳細は「[直接還元法 Excel ワークブック出力](#直接還元法-excel-ワークブック出力)」セクションを参照してください。  
+> qualifying real-world PDF 評価は未完了（Issue #21 open）。実務検証済みとは表記しません。
 
 > **v0.4.0 — PDF ingestion hardening**  
 > Japanese status column detection を強化し、tenant-name / date-type 列の false positive を抑制しました。  
@@ -278,6 +284,69 @@ PDF が safe failure になった場合も、dry-run 時は `extraction_log.json
 
 ---
 
+---
+
+## 直接還元法 Excel ワークブック出力
+
+`--excel-output <path>` オプションで、抽出したレントロール行から直接還元法 Excel ワークブック（`.xlsx`）を生成します。
+
+```powershell
+# CSV → 直接還元法 Excel ワークブック生成
+python src/main.py --assumptions assumptions.sample.yaml --output ./output --excel-output ./output/direct_cap.xlsx
+
+# PDF → 直接還元法 Excel ワークブック生成
+python src/main.py --assumptions assumptions.sample.yaml --rent-roll-pdf data/sample_rentroll_simple.pdf --output ./output --excel-output ./output/direct_cap.xlsx
+```
+
+- `--excel-output` 未指定の場合、`revenue_analysis.xlsx` / `missing_info.md` / `extraction_log.json` のみ生成されます（既存動作は変わりません）。
+- `--dry-run` と同時に指定した場合、Excel ワークブックは生成されません。
+- 出力先の親ディレクトリが存在しない場合は自動的に作成します。
+
+### ワークブックのシート構成
+
+生成されるワークブックは3シートで構成されます。
+
+| シート名 | 内容 |
+|----------|------|
+| `直接還元法_OER` | 直接還元法の収益試算サマリー。年額収入セル（E2/E3/E5/E6/E7）は `読み取りレントロール` の年額合計を自動参照 |
+| `直接還元法‗費用詳細版` | 費用明細の手入力シート（管理費・修繕費・損害保険料・固定資産税等） |
+| `読み取りレントロール` | 抽出したレントロール行（1区画1行）、月計・年計の集計行を含む |
+
+### 直接還元法_OER シートの収入連携セル
+
+以下のセルは `読み取りレントロール` シートの年計行を自動参照します。
+年額変換（×12）は `読み取りレントロール` 側で実施済みのため、OER シートでの二重乗算はありません。
+
+| セル | ラベル |
+|------|--------|
+| E2 | 年額貸室賃料収入 |
+| E3 | 年額共益費収入 |
+| E5 | 年額水道光熱費収入 |
+| E6 | 年額駐車場収入 |
+| E7 | その他収入 |
+
+空室損失率・貸倒損失・経費率・資本的支出・還元利回り等の仮定入力欄（E9以降）はユーザーが手入力します。
+
+### 想定するワークフロー
+
+1. `--excel-output` で収益試算のたたき台 `.xlsx` を生成します。
+2. `読み取りレントロール` シートで抽出値を確認します。空室区画の想定賃料等は備考欄（`ユーザーが賃料等を入力可能`）を参考に手入力します。
+3. `直接還元法‗費用詳細版` シートで費用の詳細を入力します。
+4. `直接還元法_OER` シートで仮定値を入力し、収益試算値を確認します。
+5. 正式な判断は不動産鑑定士・税理士・弁護士等の専門家に確認してください。
+
+### Excel ワークブック出力の制限事項
+
+| 項目 | 状態 |
+|------|------|
+| OCR・スキャン PDF | 対象外 |
+| qualifying real-world PDF の評価 | 未完了（Issue #21 open）。実務検証済みとは表記しません |
+| 空室区画の賃料推測補完 | 実施しません。空欄はユーザーが手入力します |
+| 鑑定評価 | 対象外。出力は「収益試算値」であり「収益価格」ではありません |
+| 投資助言・法律助言・税務助言 | 対象外 |
+
+---
+
 ## ディレクトリ構成
 
 ```
@@ -309,7 +378,8 @@ revenue-kun/
 │       ├── valuation.py       # 直接還元法（収益試算値）
 │       ├── sensitivity.py     # 感応度分析
 │       ├── missing.py         # 欠損検出（補完しない）
-│       └── outputs.py         # md / xlsx / json 出力
+│       ├── outputs.py         # md / xlsx / json 出力
+│       └── excel_output.py    # 直接還元法 Excel ワークブック生成（--excel-output）
 ├── tests/                     # pytest テスト（NOI / PDF抽出 / 免責 / 入力検証 / スキーマ）
 └── output/                    # 実行時に生成される出力先（.gitignore 対象）
     ├── missing_info.md
@@ -347,6 +417,12 @@ python src/main.py --assumptions assumptions.sample.yaml --rent-roll-pdf data/sa
 
 # PDF dry-run（PDFが読み取れるか事前確認。計算・成果物生成なし）
 python src/main.py --assumptions assumptions.sample.yaml --rent-roll-pdf data/sample_rentroll_simple.pdf --dry-run
+
+# 直接還元法 Excel ワークブック生成（CSV 経路）
+python src/main.py --assumptions assumptions.sample.yaml --output ./output --excel-output ./output/direct_cap.xlsx
+
+# 直接還元法 Excel ワークブック生成（PDF 経路）
+python src/main.py --assumptions assumptions.sample.yaml --rent-roll-pdf data/sample_rentroll_simple.pdf --output ./output --excel-output ./output/direct_cap.xlsx
 
 # CLIオプション一覧
 python src/main.py --help
@@ -467,11 +543,12 @@ NOI（運営純収益）   = EGI − 運営費用合計
 | `missing_info.md` | 欠損項目の一覧（区分・出所・計算への影響） |
 | `revenue_analysis.xlsx` | サマリー / レントロール / NOI計算 / 感応度分析 / 欠損項目 の5シート |
 | `extraction_log.json` | 固定スキーマのログ（入力/出力ファイル・PDF名・抽出件数・必須/任意欠損・GPI/NOI/収益試算値・実行時刻） |
+| `<任意パス>.xlsx`（`--excel-output` 指定時のみ） | 直接還元法 Excel ワークブック（`直接還元法_OER` / `直接還元法‗費用詳細版` / `読み取りレントロール` の3シート） |
 
 ---
 
 ## バージョン・ライセンス
 
-**v0.4.0** — Apache License 2.0（Copyright 2026 km）
+**v0.4.1** — Apache License 2.0（Copyright 2026 km）
 
 変更履歴は [CHANGELOG.md](CHANGELOG.md) を参照してください。
