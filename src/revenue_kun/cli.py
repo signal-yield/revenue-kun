@@ -21,6 +21,7 @@ from .outputs import (
     write_extraction_log,
     write_missing_info,
 )
+from .excel_output import DirectCapRow, write_direct_cap_workbook
 from .pdf_extract import RentRollExtractionError, extract_rent_roll_from_pdf
 from .rent_roll import load_rent_roll
 from .sensitivity import build_sensitivity
@@ -73,6 +74,8 @@ def build_parser() -> argparse.ArgumentParser:
                    help="出力ディレクトリ")
     p.add_argument("--dry-run", action="store_true", default=False,
                    help="入力抽出と診断のみを実行し、計算・成果物生成は行わない")
+    p.add_argument("--excel-output", dest="excel_output", default=None,
+                   help="直接還元法Excelワークブックの出力パス（.xlsx）")
     p.add_argument("--version", action="version", version=f"revenue-kun {__version__}")
     return p
 
@@ -83,6 +86,7 @@ def run(
     out_dir: str,
     rent_roll_pdf: str | None = None,
     dry_run: bool = False,
+    excel_output_path: str | None = None,
 ) -> int:
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -209,11 +213,18 @@ def run(
         pdf_extraction=extraction_meta,
     )
 
+    # 10. 直接還元法 Excel ワークブック（--excel-output 指定時のみ）
+    if excel_output_path is not None:
+        dc_rows = [DirectCapRow.from_rent_roll_unit(u) for u in units]
+        write_direct_cap_workbook(excel_output_path, dc_rows)
+
     print("-" * 64)
     print("出力ファイル:")
     print(f"  - {missing_path}")
     print(f"  - {xlsx_path}")
     print(f"  - {log_path}")
+    if excel_output_path is not None:
+        print(f"  - {excel_output_path}")
     print("=" * 64)
     return 0
 
@@ -223,8 +234,9 @@ def main(argv: list[str] | None = None) -> int:
     try:
         return run(args.assumptions, args.rent_roll, args.output,
                    rent_roll_pdf=args.rent_roll_pdf,
-                   dry_run=args.dry_run)
-    except FileNotFoundError as e:
+                   dry_run=args.dry_run,
+                   excel_output_path=args.excel_output)
+    except OSError as e:
         print(f"[エラー] {e}", file=sys.stderr)
         return 1
     except RentRollExtractionError as e:
