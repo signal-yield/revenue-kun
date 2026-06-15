@@ -4,15 +4,19 @@
 
 This document defines the product positioning for `revenue-kun` after the v0.4.1 PDF ingestion hardening release.
 
-The purpose is to prevent the next phase from drifting into premature parser expansion, SaaS claims, appraisal claims, investment advice claims, or completed Claude Skill claims.
+The key correction after review is that the user-facing deliverable is not a Markdown report. The intended product flow is:
 
-This positioning should be used as the source of truth for the next public-facing artifacts:
+```text
+rent roll PDF input
+↓
+Excel workbook output
+↓
+user reviews and edits assumptions directly in Excel
+↓
+Direct Capitalization Method calculation is updated through Excel formulas
+```
 
-- demo scenario
-- sample output report
-- GitHub Pages LP v0.1
-- note / LinkedIn / Qiita drafts
-- consultation and joint validation CTA copy
+This document should guide the next phase: Excel-output specification, workbook generation, and GitHub Pages LP v0.1 preparation.
 
 ## 2. Current state
 
@@ -50,7 +54,7 @@ Primary audience:
 - appraisal and due diligence professionals
 - investment management professionals who review rent roll and income assumptions
 
-The tool should be positioned as a review-assistance and validation-oriented workflow aid for practitioners, not as a replacement for professional judgment.
+The tool should be positioned as an Excel-output review-assistance workflow, not as a replacement for professional judgment.
 
 ## 4. Secondary target users
 
@@ -64,32 +68,17 @@ Secondary audience:
 - developers evaluating structured rent roll processing
 - business owners exploring AI-assisted real estate operations
 
-For this audience, the emphasis should be on transparent OSS validation, reproducibility, logs, and clearly stated support boundaries.
+For this audience, the emphasis should be on transparent OSS validation, reproducibility, Excel formula traceability, and clearly stated support boundaries.
 
-## 5. Out-of-scope audiences
+## 5. Product definition
 
-The project should not be aimed at general real estate investors or individuals seeking a buy/sell decision.
+`revenue-kun` is an OSS validation project for assisting real estate income estimation and rent roll review, designed with future Claude Skill packaging in mind.
 
-Out-of-scope audiences:
+The intended user-facing output is an Excel workbook based on a Direct Capitalization Method template.
 
-- general real estate investors
-- individual investors expecting investment recommendations
-- users asking whether a specific property should be bought or sold
-- users expecting formal appraisal output
-- users expecting legal, tax, or investment advice
-- users expecting fully automated PDF understanding across arbitrary documents
+The current product definition is:
 
-This boundary is important because broad investor-facing messaging can make the project look like investment advice or appraisal work.
-
-## 6. Product definition
-
-`revenue-kun` is an OSS validation project for real estate income estimation and rent roll review assistance, designed with future Claude Skill packaging in mind.
-
-It helps review the pre-estimation workflow around rent roll reading, GPI calculation, NOI calculation, and direct-capitalization-based estimated value calculation under explicit assumptions.
-
-The product definition is:
-
-> `revenue-kun` is a research and validation CLI for assisting real estate income estimation and rent roll review. It is intended to make assumptions, parsed values, excluded rows, warnings, and calculation outputs easier to inspect before a practitioner makes their own judgment.
+> `revenue-kun` reads a rent roll PDF and outputs an Excel workbook that contains both a Direct Capitalization Method calculation sheet and a parsed rent roll sheet. The workbook allows the user to review the parsed rent roll, edit vacant-unit assumptions or revenue items directly in Excel, and see the Direct Capitalization Method calculation update through formulas.
 
 It is not:
 
@@ -101,8 +90,81 @@ It is not:
 - a tax advice tool
 - a universal PDF extraction engine
 - an OCR or scanned-PDF solution
+- a replacement for practitioner review
 
-## 7. Claude Skill positioning
+## 6. Confirmed Excel output structure
+
+The output workbook should contain the following sheets:
+
+1. `直接還元法_OER`
+2. `直接還元法‗費用詳細版`
+3. `読み取りレントロール`
+
+The first implementation focus should be the OER version. The detailed expense version may remain available for user-side refinement.
+
+## 7. Confirmed auto-filled cells in OER sheet
+
+Only the following OER input cells should be auto-filled from the parsed rent roll at this stage:
+
+| Sheet | Cell | Meaning |
+|---|---:|---|
+| `直接還元法_OER` | `E2` | 年額貸室賃料収入 |
+| `直接還元法_OER` | `E3` | 年額共益費収入 |
+| `直接還元法_OER` | `E5` | 年額水道光熱費収入 |
+| `直接還元法_OER` | `E6` | 年額駐車場収入 |
+| `直接還元法_OER` | `E7` | その他収入 |
+
+Other inputs such as vacancy loss rates, bad debt loss, OER, capital expenditure, cap rate, and detailed expense assumptions should be edited by the user directly in the output workbook.
+
+This is intentional. It keeps the automated extraction narrow while preserving user control over valuation assumptions.
+
+## 8. Confirmed parsed rent roll sheet behavior
+
+The `読み取りレントロール` sheet should contain the parsed rent roll in an editable format.
+
+Confirmed requirements:
+
+- Do not split columns into `PDF読み取り` and `ユーザー入力` variants.
+- The parsed cells themselves should be editable by the user.
+- Vacant rows should show the note `ユーザーが賃料等を入力可能` in the remarks column.
+- The sheet should include a `月額合計` row at the bottom.
+- The sheet should include a `年額合計` row below the monthly total row.
+- The annual total row should calculate each revenue category as monthly total multiplied by 12.
+- The annual total row should have borders.
+- Amount cells should use comma-separated number formatting.
+- No unnecessary borders should be drawn below the annual total row.
+
+The rent roll sheet should calculate totals by revenue category, not by unit-level total columns.
+
+Revenue categories currently expected:
+
+- 賃料
+- 共益費
+- 水道光熱費
+- 駐車場
+- その他収入
+
+## 9. Formula flow
+
+The OER sheet should reference the annual total row in `読み取りレントロール`.
+
+The OER sheet should not multiply these linked cells by 12, because annualization is already done in the `読み取りレントロール` sheet.
+
+Expected formula concept:
+
+```text
+読み取りレントロール monthly totals
+↓
+読み取りレントロール annual totals = monthly totals × 12
+↓
+直接還元法_OER E2/E3/E5/E6/E7 reference annual totals directly
+↓
+existing Direct Capitalization Method formulas calculate income, NOI, net income, and estimated value
+```
+
+Excel formulas should be preserved and made inspectable by the user.
+
+## 10. Claude Skill positioning
 
 Claude Skill packaging is a future-facing product direction, not a completed release claim.
 
@@ -114,22 +176,20 @@ The correct positioning is:
 - currently available as GitHub OSS
 - next public-facing materials may describe the intended Claude Skill direction if clearly framed as future packaging or validation direction
 
-Public copy should avoid wording that implies a completed Claude Skill release.
-
 Acceptable wording:
 
-- "Claude Skill化を想定"
-- "future Claude Skill packaging in mind"
-- "Claude Skill workflow candidate"
-- "currently published as GitHub OSS"
+- `Claude Skill化を想定`
+- `future Claude Skill packaging in mind`
+- `Claude Skill workflow candidate`
+- `currently published as GitHub OSS`
 
 Unacceptable wording:
 
-- "Claude Skill版リリース済み"
-- "completed Claude Skill"
-- "available as a production Claude Skill"
+- `Claude Skill版リリース済み`
+- `completed Claude Skill`
+- `available as a production Claude Skill`
 
-## 8. What may be claimed publicly
+## 11. What may be claimed publicly
 
 The following claims are acceptable for LP, README-adjacent copy, note, LinkedIn, Qiita, and consultation materials:
 
@@ -138,20 +198,20 @@ The following claims are acceptable for LP, README-adjacent copy, note, LinkedIn
 - PDF ingestion regression hardening済み
 - tests: 161 passed, 0 failed
 - research and validation CLI
-- real estate income estimation assistance
-- rent roll review assistance
-- direct-capitalization-based calculation under explicit assumptions
-- summary row filtering is covered by regression tests
-- Japanese status-column false-positive handling has been hardened
-- assumptions, warnings, and calculation outputs are intended to be inspectable
+- rent roll PDF input is intended to produce an Excel workbook output
+- output workbook includes Direct Capitalization Method sheets and a parsed rent roll sheet
+- the parsed rent roll sheet is editable by the user
+- vacant-unit assumptions can be edited in Excel
+- OER version auto-fills annual rent, common area fees, utilities income, parking income, and other income
+- Excel formulas remain inspectable
 - joint validation / consultation is welcome
 - Claude Skill packaging is a future-oriented direction
 
 These claims should remain narrow and evidence-based.
 
-## 9. What must not be claimed
+## 12. What must not be claimed
 
-The following claims must not be used in public copy, LP, release notes, PR material, note, LinkedIn, Qiita, or consultation copy:
+The following claims must not be used as positive public claims:
 
 - 実務PDF検証済み
 - real-world PDF verified
@@ -170,7 +230,7 @@ The following claims must not be used in public copy, LP, release notes, PR mate
 
 Do not imply that v0.4.1 proves broad field readiness. It is a stable hardening point with clearly bounded regression coverage.
 
-## 10. Why the CTA should be joint validation / consultation
+## 13. Why the CTA should be joint validation / consultation
 
 The CTA should be joint validation / consultation rather than immediate purchase or SaaS signup.
 
@@ -178,48 +238,48 @@ Reasons:
 
 1. The project is currently an OSS validation project, not a completed SaaS.
 2. Real rent roll PDF formats vary, and support boundaries must be validated carefully.
-3. The current value is strongest for expert review, workflow discussion, and controlled validation.
+3. The current value is strongest when paired with practitioner review in Excel.
 4. A consultation CTA avoids overstating readiness while still creating a business development path.
 5. Joint validation can collect qualifying text-based rent roll examples without claiming broad real-world coverage.
 6. Practitioner feedback is needed before deciding whether the next phase should be Claude Skill packaging, v0.5.0 product work, or both.
 
 Recommended CTA direction:
 
-- "共同検証について相談する"
-- "収益試算・レントロール確認ワークフローについて相談する"
-- "GitHub OSSを確認する"
-- "デモ出力を見る"
+- `共同検証について相談する`
+- `レントロールPDFから直接還元法Excelへの出力について相談する`
+- `GitHub OSSを確認する`
+- `Excel出力サンプルを見る`
 
 Avoid CTA language that suggests automated investment decisions or finished commercial deployment.
 
-## 11. How this positioning informs the LP
+## 14. How this positioning informs the LP
 
 The GitHub Pages LP v0.1 should be a credibility-building page, not a hard-selling SaaS landing page.
 
 LP structure should follow this positioning:
 
-1. First view: explain the review-assistance problem in rent roll and income estimation workflows.
-2. What it is: GitHub OSS validation project for income estimation and rent roll review assistance.
-3. Problem: PDF rent roll preprocessing errors can affect GPI, NOI, and estimated value calculations.
-4. What it can do: show narrow, test-backed capabilities from v0.4.1.
+1. First view: explain rent roll PDF input and Direct Capitalization Method Excel output.
+2. What it is: GitHub OSS validation project for rent roll review and income estimation assistance.
+3. Problem: rent roll preprocessing errors can affect annual income, NOI, and estimated value calculations.
+4. What it outputs: editable Excel workbook with OER sheet, detailed expense sheet, and parsed rent roll sheet.
 5. What v0.4.1 hardened: status-column handling, summary row filtering, stale wording cleanup, regression tests.
-6. Demo output: show input, output, assumptions, warnings, and excluded rows.
+6. Excel output sample: show the actual workbook structure.
 7. What it cannot do: explicitly state support boundaries.
 8. Intended users: practitioners and PropTech / real estate AI builders.
 9. Links: GitHub, note, Qiita, LinkedIn.
 10. CTA: joint validation / consultation.
-11. Disclaimer: not appraisal, investment advice, legal advice, or judgment replacement.
+11. Disclaimer: not appraisal, investment advice, legal advice, tax advice, or judgment replacement.
 
-The LP should make the project feel credible because it is honest about boundaries.
+The LP should make the project feel credible because it shows the actual Excel output and is honest about boundaries.
 
-## 12. Next artifacts to create
+## 15. Next artifacts to create
 
 The next artifacts should be created in this order:
 
-1. `DEMO_SCENARIO_V041.md`
-2. `sample_output_report.md`
-3. `sample_assumptions_and_warnings.md`
-4. GitHub Pages LP v0.1 draft
-5. CTA wiring and minimum public links
+1. Lock the Excel output sample workbook as the reference artifact.
+2. Create an Excel output specification document.
+3. Update implementation tasks so the CLI writes the confirmed workbook format.
+4. Create GitHub Pages LP v0.1 using the Excel output sample as the main visual proof.
+5. Add CTA wiring and minimum public links.
 
 Do not return to parser expansion until qualifying real-world text-based rent roll PDFs are available and the scope is narrowed by evidence.
