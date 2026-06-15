@@ -236,7 +236,7 @@ def main(argv: list[str] | None = None) -> int:
                    rent_roll_pdf=args.rent_roll_pdf,
                    dry_run=args.dry_run,
                    excel_output_path=args.excel_output)
-    except FileNotFoundError as e:
+    except OSError as e:
         print(f"[エラー] {e}", file=sys.stderr)
         return 1
     except RentRollExtractionError as e:

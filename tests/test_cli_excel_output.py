@@ -5,6 +5,7 @@ All fixtures are synthetic and anonymous.  No private PDFs or PII are used.
 from __future__ import annotations
 
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 from openpyxl import load_workbook
@@ -114,3 +115,45 @@ def test_rent_roll_sheet_has_data_rows(tmp_path):
     assert ws.max_row >= 2, "Rent roll sheet should have at least one data row"
     # First column of row 2 should be non-empty (区画番号)
     assert ws.cell(2, 1).value is not None, "Row 2 col A should contain a unit number"
+
+
+# ---------------------------------------------------------------------------
+# Finding 1: missing parent directory is created automatically
+# ---------------------------------------------------------------------------
+
+def test_excel_output_creates_missing_parent_directory(tmp_path):
+    """--excel-output のパス親ディレクトリが存在しない場合でも自動作成して書き込む。"""
+    # Use a path whose parent (nested_dir/) is independent of out_dir so it
+    # does not benefit from the out_dir mkdir in run().
+    out_dir = tmp_path / "out"
+    xlsx = tmp_path / "nested_dir" / "sub" / "direct_cap.xlsx"
+    assert not xlsx.parent.exists(), "Pre-condition: parent should not exist yet"
+    rc = run(ASSUMPTIONS, DUMMY_CSV, str(out_dir),
+             excel_output_path=str(xlsx))
+    assert rc == 0
+    assert xlsx.exists(), "Workbook should be created even when parent dir was absent"
+
+
+# ---------------------------------------------------------------------------
+# Finding 2: PermissionError / OSError from write produces clean CLI error
+# ---------------------------------------------------------------------------
+
+def test_excel_output_permission_error_returns_exit_1(tmp_path, capsys):
+    """write_direct_cap_workbook が PermissionError を送出した場合、トレースバックなしで exit 1 を返す。"""
+    from revenue_kun.cli import main
+
+    xlsx = tmp_path / "out" / "direct_cap.xlsx"
+    with patch(
+        "revenue_kun.cli.write_direct_cap_workbook",
+        side_effect=PermissionError("access denied"),
+    ):
+        rc = main([
+            "--assumptions", ASSUMPTIONS,
+            "--rent-roll", DUMMY_CSV,
+            "--output", str(tmp_path / "out"),
+            "--excel-output", str(xlsx),
+        ])
+    assert rc == 1
+    err = capsys.readouterr().err
+    assert "[エラー]" in err, "Clean error message expected on stderr"
+    assert "access denied" in err

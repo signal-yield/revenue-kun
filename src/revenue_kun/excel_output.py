@@ -141,7 +141,9 @@ def write_direct_cap_workbook(
     if "Sheet" in wb.sheetnames:
         del wb["Sheet"]
 
-    wb.save(Path(path))
+    dest = Path(path)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    wb.save(dest)
 
 
 # ---------------------------------------------------------------------------
