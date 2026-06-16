@@ -212,17 +212,57 @@ Fork condition not triggered. DEC-01 Option C proceeds without architectural cha
 
 ---
 
+## DEC-04: v0.1 配布形態 — Package Skill（Option C 撤回）
+
+**Date**: 2026-06-16
+**Status**: Decided
+**Supersedes**: DEC-01 Option C（Claude Code project workflow を v0.1 配布形態とする決定）
+
+### Context
+
+DEC-01 で選択した Option C（Claude Code project workflow）は Claude Code ユーザー向けには有効だが、
+claude.ai / Cowork ユーザーは clone・ターミナル・Python 環境構築なしで利用する必要がある。
+jucho-kun / tochi-satei-kun が採用している Package Skill 形式が同等の体験を提供できることが確認された。
+
+### Decision
+
+**v0.1 配布形態を Package Skill（`skill/` ディレクトリ同梱）に変更する。**
+
+- `skill/SKILL.md` がトリガー・免責・実行手順を定義する
+- `skill/scripts/` は `src/revenue_kun/` のバンドル（`build_skill.py` で生成・同期検証）
+- `skill/samples/` に合成サンプル PDF と `assumptions.sample.yaml` を同梱
+- `CLAUDE.md` / `.claude/settings.json` / `.claude/commands/` は Claude Code 内部ワークフローとして維持するが v0.1 の主配布形態ではない
+
+### Rejection rationale for Option C as primary
+
+| 理由 | 内容 |
+|------|------|
+| ユーザー摩擦 | claude.ai / Cowork ユーザーに clone・Python 環境を要求する |
+| 配布形態の非対称 | jucho / tochi が Package Skill で動作実績あり；Option C に同等実績なし |
+| スコープ | CLAUDE.md は always-on 安全ベースとして引き続き有効；v0.1 配布形態の変更のみ |
+
+### Exit conditions
+
+- Package Skill 登録レジストリが公開・確認された → marketplace Skill（Option D）を追加レイヤーとして評価
+- Issue #21 完了 → Gate 2 公開の claim boundary を決定（DEC-03 §Gate 2 適用）
+
+---
+
 ## Implementation sequence (current)
 
 | Step | Artifact | Status |
 |------|----------|--------|
 | D0 | Dependency smoke test | ✅ Passed |
-| A | `DECISIONS.md` entries DEC-01 / DEC-02 / DEC-03 + D0 | ✅ This PR |
+| A | `DECISIONS.md` entries DEC-01 / DEC-02 / DEC-03 + D0 | ✅ Merged |
 | PR #64 | `CLAUDE.md` (always-on operator instructions) | ✅ Merged |
-| PR B | `.claude/settings.json` (permission allowlist / denylist) | ⬜ Next |
-| PR C | `.claude/commands/revenue-kun.md` (`/revenue-kun` command) | ⬜ After PR B |
-| PR D | E2E sample validation (Gate 1 prerequisite) | ⬜ After PR C |
-| **Gate 1** | Early publish — "Claude Code project workflow" | ⬜ After PR D |
+| PR B | `.claude/settings.json` (permission allowlist / denylist) | ✅ Merged PR #66 |
+| PR C | `.claude/commands/revenue-kun.md` (`/revenue-kun` command) | ✅ Merged PR #67 |
+| PR D | E2E sample validation | ✅ Merged PR #68 |
+| OER | `直接還元法_OER` self-computing model | ✅ Merged PR #69 |
+| README | Claude Code project workflow section | ✅ Merged PR #70 |
+| DEC-04 | v0.1 配布形態 = Package Skill（Option C 撤回） | ✅ This PR |
+| Skill | `skill/` package + `build_skill.py` + self-test | ✅ This PR |
+| **Gate 1** | Early publish — Package Skill + 合成サンプル検証済み | ⬜ After this PR |
 | [parallel] | Issue #21 sample PDF procurement | ⬜ Day 1 background |
 | F | Issue #21 — qualifying real-world PDF evaluation | ⬜ After procurement |
 | **Gate 2** | PR TIMES / note / LinkedIn | ⬜ After F |

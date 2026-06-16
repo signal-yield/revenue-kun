@@ -17,6 +17,9 @@ venv/
 !.claude/settings.json
 !.claude/commands/
 
+# Skill 実行時の出力（コミット禁止）
+skill/out/
+
 # ローカル評価用（実物・匿名化サンプルPDF）— コミット禁止
 samples/private/
 eval/
