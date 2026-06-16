@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python src/main.py --version)",
+      "Bash(python src/main.py --help)",
+      "Bash(python src/main.py*--dry-run*)",
+      "Bash(python src/main.py*--excel-output*)",
+      "Bash(python -m pytest tests/*)"
+    ],
+    "deny": [
+      "Bash(pip*)",
+      "Bash(uv add*)",
+      "Bash(uv pip*)",
+      "Bash(git push*)",
+      "Bash(git commit*)",
+      "Bash(git reset --hard*)",
+      "Bash(git checkout -- *)",
+      "Bash(python scripts/make_sample_pdf.py*)",
+      "Bash(*tesseract *)",
+      "Bash(*pytesseract*)",
+      "Bash(*easyocr*)",
+      "Bash(rm -rf*)",
+      "PowerShell(Start-Job*)"
+    ]
+  }
+}
