@@ -12,9 +12,10 @@ __pycache__/
 venv/
 .venv/
 
-# ツール設定（settings.json はプロジェクト共有のため追跡、settings.local.json は除外）
+# ツール設定（settings.json・commands/ はプロジェクト共有のため追跡、settings.local.json は除外）
 .claude/*
 !.claude/settings.json
+!.claude/commands/
 
 # ローカル評価用（実物・匿名化サンプルPDF）— コミット禁止
 samples/private/
