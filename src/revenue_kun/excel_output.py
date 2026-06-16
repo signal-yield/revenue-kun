@@ -2,13 +2,23 @@
 
 Produces a three-sheet .xlsx workbook:
 
-  Sheet 1: 直接還元法_OER        -- direct cap summary; E2/E3/E5/E6/E7 linked
-  Sheet 2: 直接還元法‗費用詳細版 -- detailed expense input (user-editable)
+  Sheet 1: 直接還元法_OER        -- self-computing live model; income E5:E9
+                                    linked to 読み取りレントロール; EGI/NOI/
+                                    収益試算値 computed from user inputs E13:E17
+  Sheet 2: 直接還元法‗費用詳細版 -- expense detail input (user-editable; SUM at B10)
   Sheet 3: 読み取りレントロール    -- extracted rent roll with monthly+annual totals
 
-IMPORTANT: OER cells E2/E3/E5/E6/E7 reference annual total cells in
+IMPORTANT: OER cells E5:E9 reference the annual total row in
 読み取りレントロール directly.  They do NOT multiply by 12 because
 読み取りレントロール already provides annual totals (monthly_total * 12).
+
+OER calculation chain (all Excel-side):
+  E10 = SUM(E5:E9)                   GPI (gross potential income)
+  E20 = E10*(1-N(E13)-N(E14))        EGI (effective gross income)
+  E21 = E20*N(E15)                   operating expenses (EGI × expense ratio)
+  E22 = E20-E21                      NOI
+  E23 = E22-N(E16)                   net income (after capex)
+  E24 = IFERROR(E23/E17,"")          収益試算値 — empty when E17 is blank
 """
 from __future__ import annotations
 
@@ -44,14 +54,14 @@ _C_OTHER = 7    # 月額その他収入
 _C_NOTES = 8    # 備考
 _INCOME_COLS = (_C_RENT, _C_CAM, _C_UTIL, _C_PARKING, _C_OTHER)
 
-# OER sheet: (cell_ref, label, income_col_in_rent_roll).
-# E4 is intentionally absent -- that row is left for user customization.
-_OER_INCOME_CELLS = [
-    ("E2", "年額貸室賃料収入",    _C_RENT),
-    ("E3", "年額共益費収入",      _C_CAM),
-    ("E5", "年額水道光熱費収入",  _C_UTIL),
-    ("E6", "年額駐車場収入",      _C_PARKING),
-    ("E7", "その他収入",          _C_OTHER),
+# OER income rows: (oer_row, label, income_col_in_rent_roll)
+# E5:E9 in OER link to the annual total row in 読み取りレントロール.
+_OER_INCOME_ROWS = [
+    (5, "貸室賃料収入",   _C_RENT),
+    (6, "共益費収入",     _C_CAM),
+    (7, "水道光熱費収入", _C_UTIL),
+    (8, "駐車場収入",     _C_PARKING),
+    (9, "その他収入",     _C_OTHER),
 ]
 
 # Styles
@@ -61,6 +71,7 @@ _HEADER_FILL = PatternFill("solid", fgColor="305496")
 _HEADER_FONT = Font(color="FFFFFF", bold=True)
 _BOLD = Font(bold=True)
 _WARN_FONT = Font(color="C00000")
+_INPUT_FILL = PatternFill("solid", fgColor="FFF2CC")   # light yellow for user-input cells
 
 
 # ---------------------------------------------------------------------------
@@ -119,8 +130,10 @@ def write_direct_cap_workbook(
 
     Sheet order: 直接還元法_OER / 直接還元法‗費用詳細版 / 読み取りレントロール
 
-    OER cells E2/E3/E5/E6/E7 contain cross-sheet references to the annual
-    total row in 読み取りレントロール.  They do NOT multiply by 12.
+    OER cells E5:E9 contain cross-sheet references to the annual total row in
+    読み取りレントロール.  They do NOT multiply by 12.
+    OER cells E13:E17 are empty user-input cells (border + light-yellow fill).
+    OER cells E20:E24 compute EGI → expenses → NOI → 収益試算値 automatically.
     """
     wb = Workbook()
 
@@ -214,46 +227,124 @@ def _build_rent_roll_sheet(ws, rows: list[DirectCapRow]) -> int:
 
 
 def _build_oer_sheet(ws, annual_total_row: int) -> None:
-    """Populate 直接還元法_OER.
+    """Populate 直接還元法_OER as a self-computing live model.
 
-    E2/E3/E5/E6/E7 reference the annual total row in 読み取りレントロール.
-    No *12 is applied here -- annual totals are already in 読み取りレントロール.
+    Income block (E5:E9): cross-sheet refs to 読み取りレントロール annual row.
+    No *12 — annual totals are already in 読み取りレントロール.
+
+    Input cells (E13:E17): empty with border + light-yellow fill.
+    User enters: 空室損失率 / 貸倒損失率 / 経費率 / 資本的支出 / 還元利回り.
+
+    Calculation chain (E20:E24):
+      E20 EGI  = E10*(1-N(E13)-N(E14))
+      E21 opex = E20*N(E15)          (EGI × expense ratio — main path)
+      E22 NOI  = E20-E21
+      E23 net  = E22-N(E16)
+      E24 value= IFERROR(E23/E17,"") (empty when cap rate is blank)
+
+    Reference rows (E27:E28): 費用詳細版 total for expense-ratio cross-check only.
+    These are NOT connected to NOI to avoid double-counting.
     """
+    ann = annual_total_row
+
+    # Title and disclaimer
     ws["A1"] = "直接還元法（収益試算）"
     ws["A1"].font = Font(bold=True, size=14)
     ws["A2"] = "※ 本値は「収益試算値」であり「収益価格」ではありません。"
     ws["A2"].font = _WARN_FONT
 
+    # Income block header — placed at TOP of income block (D4/E4)
     ws["D4"] = "収入項目"
     ws["E4"] = "年額（円）"
     ws["D4"].font = _BOLD
     ws["E4"].font = _BOLD
 
-    for cell_ref, label, income_col in _OER_INCOME_CELLS:
-        row_num = int(cell_ref[1:])
+    # Income rows E5:E9 — cross-sheet refs, NO *12
+    for row_num, label, income_col in _OER_INCOME_ROWS:
         col_letter = get_column_letter(income_col)
-        ws.cell(row_num, 4, label)  # D column label
-        # Cross-sheet reference -- NO *12
-        formula = f"={SHEET_RENT_ROLL}!{col_letter}{annual_total_row}"
-        ws[cell_ref] = formula
-        ws[cell_ref].number_format = _MONEY_FORMAT
+        ws.cell(row_num, 4, label)
+        formula = f"='{SHEET_RENT_ROLL}'!{col_letter}{ann}"
+        cell = ws.cell(row_num, 5, formula)
+        cell.number_format = _MONEY_FORMAT
 
-    # User-editable assumption rows
-    assumption_labels = {
-        9:  "空室損失率",
-        10: "駐車場等の空室損失率",
-        11: "貸倒損失",
-        12: "経費率",
-        13: "資本的支出",
-        14: "還元利回り",
-    }
-    for row_num, label in assumption_labels.items():
-        ws.cell(row_num, 4, label).font = _BOLD
-        ws.cell(row_num, 5).number_format = "0.000%"
+    # GPI total
+    ws["D10"] = "総収入（年額）"
+    ws["D10"].font = _BOLD
+    ws["E10"] = "=SUM(E5:E9)"
+    ws["E10"].number_format = _MONEY_FORMAT
+    ws["E10"].font = _BOLD
+
+    # Assumption inputs header
+    ws["D12"] = "前提条件（ユーザー入力）"
+    ws["D12"].font = _BOLD
+
+    # Input cells E13:E17 — empty, border + light-yellow fill
+    input_defs = [
+        (13, "空室損失率",           "0.0%"),
+        (14, "貸倒損失率",           "0.0%"),
+        (15, "経費率（運営費用率）",  "0.0%"),
+        (16, "資本的支出（年額）",    _MONEY_FORMAT),
+        (17, "還元利回り",            "0.000%"),
+    ]
+    for row_num, label, fmt in input_defs:
+        ws.cell(row_num, 4, label)
+        cell = ws.cell(row_num, 5)
+        cell.number_format = fmt
+        cell.border = _FULL_BORDER
+        cell.fill = _INPUT_FILL
+
+    # Calculation results header
+    ws["D19"] = "計算結果"
+    ws["D19"].font = _BOLD
+
+    ws["D20"] = "有効総収入（EGI）"
+    ws["E20"] = "=E10*(1-N(E13)-N(E14))"
+    ws["E20"].number_format = _MONEY_FORMAT
+
+    ws["D21"] = "運営費用合計"
+    ws["E21"] = "=E20*N(E15)"
+    ws["E21"].number_format = _MONEY_FORMAT
+
+    ws["D22"] = "運営純収益（NOI）"
+    ws["E22"] = "=E20-E21"
+    ws["E22"].number_format = _MONEY_FORMAT
+
+    ws["D23"] = "純収益（還元対象）"
+    ws["E23"] = "=E22-N(E16)"
+    ws["E23"].number_format = _MONEY_FORMAT
+
+    ws["D24"] = "収益試算値（直接還元法）"
+    ws["D24"].font = _BOLD
+    ws["E24"] = '=IFERROR(E23/E17,"")'
+    ws["E24"].number_format = _MONEY_FORMAT
+    ws["E24"].font = _BOLD
+
+    ws["D25"] = "※ 還元利回り（E17）未入力時、収益試算値は空欄になります。"
+    ws["D25"].font = _WARN_FONT
+
+    # Reference rows: 費用詳細版 total (参考 — NOT connected to NOI)
+    ws["D27"] = "（参考）費用明細合計"
+    ws["E27"] = f"='{SHEET_EXPENSE}'!B10"
+    ws["E27"].number_format = _MONEY_FORMAT
+
+    ws["D28"] = "（参考）明細ベース経費率"
+    ws["E28"] = '=IFERROR(E27/E20,"")'
+    ws["E28"].number_format = "0.0%"
+
+    ws["D29"] = (
+        "※ 費用明細は出力後にユーザーが入力。"
+        "OERのNOIは経費率（E15）で計算され、明細合計（E27）はNOIに連動しません"
+        "（経費率の妥当性確認用）。"
+    )
+    ws["D29"].font = _WARN_FONT
 
 
 def _build_expense_sheet(ws) -> None:
-    """Populate 直接還元法‗費用詳細版 with a minimal user-editable structure."""
+    """Populate 直接還元法‗費用詳細版 with user-editable structure and SUM row.
+
+    B5:B9 are empty input cells with border + light-yellow fill.
+    B10 = SUM(B5:B9) — referenced by OER E27 as a cross-check (not linked to NOI).
+    """
     ws["A1"] = "直接還元法 費用詳細版（ユーザー入力）"
     ws["A1"].font = Font(bold=True, size=13)
     ws["A2"] = "※ 各費用は実費または想定値を入力してください。"
@@ -273,7 +364,24 @@ def _build_expense_sheet(ws) -> None:
     ]
     for i, label in enumerate(expense_labels, start=5):
         ws.cell(i, 1, label)
-        ws.cell(i, 2).number_format = _MONEY_FORMAT
+        cell = ws.cell(i, 2)
+        cell.number_format = _MONEY_FORMAT
+        cell.border = _FULL_BORDER
+        cell.fill = _INPUT_FILL
+
+    # SUM row
+    ws["A10"] = "費用合計"
+    ws["A10"].font = _BOLD
+    ws["B10"] = "=SUM(B5:B9)"
+    ws["B10"].number_format = _MONEY_FORMAT
+    ws["B10"].font = _BOLD
+
+    ws["A12"] = (
+        "※ 本シートは出力後にユーザーが入力します。"
+        "OERのNOIは経費率（OER!E15）で計算され、本合計は連動しません"
+        "（経費率の妥当性確認用）。"
+    )
+    ws["A12"].font = _WARN_FONT
 
 
 # ---------------------------------------------------------------------------

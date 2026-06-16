@@ -169,7 +169,7 @@ def test_annual_total_row_formulas_use_times_12(wb):
 
 
 # ---------------------------------------------------------------------------
-# Test 5: OER E2/E3/E5/E6/E7 reference the annual total row
+# Test 5: OER E5:E9 reference the annual total row in 読み取りレントロール
 # ---------------------------------------------------------------------------
 
 def test_oer_income_cells_reference_rent_roll_annual_row(wb):
@@ -178,7 +178,7 @@ def test_oer_income_cells_reference_rent_roll_annual_row(wb):
     assert annual_row is not None
 
     oer_ws = wb[SHEET_OER]
-    for cell_ref in ("E2", "E3", "E5", "E6", "E7"):
+    for cell_ref in ("E5", "E6", "E7", "E8", "E9"):
         formula = oer_ws[cell_ref].value
         assert isinstance(formula, str) and formula.startswith("="), (
             f"OER {cell_ref} should be a formula, got: {formula!r}"
@@ -194,18 +194,148 @@ def test_oer_income_cells_reference_rent_roll_annual_row(wb):
 
 
 # ---------------------------------------------------------------------------
-# Test 6: OER E2/E3/E5/E6/E7 formulas do NOT contain *12
+# Test 6: OER E5:E9 formulas do NOT contain *12
 # ---------------------------------------------------------------------------
 
 def test_oer_income_cells_do_not_multiply_by_12(wb):
     oer_ws = wb[SHEET_OER]
-    for cell_ref in ("E2", "E3", "E5", "E6", "E7"):
+    for cell_ref in ("E5", "E6", "E7", "E8", "E9"):
         formula = oer_ws[cell_ref].value or ""
         normalized = formula.replace(" ", "")
         assert "*12" not in normalized, (
             f"OER {cell_ref} must not contain *12 (annual total already in "
             f"{SHEET_RENT_ROLL}), got: {formula!r}"
         )
+
+
+# ---------------------------------------------------------------------------
+# Test 11: OER calculation formulas (E10, E20-E24) — self-computing model
+# ---------------------------------------------------------------------------
+
+def test_oer_gpi_total_formula(wb):
+    oer_ws = wb[SHEET_OER]
+    assert oer_ws["E10"].value == "=SUM(E5:E9)", (
+        f"E10 should be =SUM(E5:E9), got: {oer_ws['E10'].value!r}"
+    )
+
+
+def test_oer_egi_formula(wb):
+    oer_ws = wb[SHEET_OER]
+    assert oer_ws["E20"].value == "=E10*(1-N(E13)-N(E14))", (
+        f"E20 (EGI) formula wrong: {oer_ws['E20'].value!r}"
+    )
+
+
+def test_oer_opex_formula_is_egi_times_expense_ratio(wb):
+    """Regression guard: operating expenses must use EGI × expense ratio (E20*N(E15))."""
+    oer_ws = wb[SHEET_OER]
+    assert oer_ws["E21"].value == "=E20*N(E15)", (
+        f"E21 (opex) must be =E20*N(E15) (EGI×expense-ratio method), "
+        f"got: {oer_ws['E21'].value!r}"
+    )
+
+
+def test_oer_noi_formula(wb):
+    oer_ws = wb[SHEET_OER]
+    assert oer_ws["E22"].value == "=E20-E21", (
+        f"E22 (NOI) formula wrong: {oer_ws['E22'].value!r}"
+    )
+
+
+def test_oer_net_income_formula(wb):
+    oer_ws = wb[SHEET_OER]
+    assert oer_ws["E23"].value == "=E22-N(E16)", (
+        f"E23 (net income) formula wrong: {oer_ws['E23'].value!r}"
+    )
+
+
+def test_oer_indicated_value_formula(wb):
+    oer_ws = wb[SHEET_OER]
+    assert oer_ws["E24"].value == '=IFERROR(E23/E17,"")', (
+        f"E24 (収益試算値) formula wrong: {oer_ws['E24'].value!r}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Test 12: NOI (E22) must NOT reference 費用詳細版; E27 must reference it
+# ---------------------------------------------------------------------------
+
+def test_noi_does_not_reference_expense_sheet(wb):
+    """費用詳細版 must not be in E22 (NOI); it appears only in E27 (reference)."""
+    oer_ws = wb[SHEET_OER]
+    noi_formula = oer_ws["E22"].value or ""
+    assert SHEET_EXPENSE not in noi_formula, (
+        f"E22 (NOI) must not reference {SHEET_EXPENSE!r}; "
+        f"expense detail is for cross-check only. Got: {noi_formula!r}"
+    )
+
+
+def test_expense_reference_is_in_e27_only(wb):
+    oer_ws = wb[SHEET_OER]
+    e27 = oer_ws["E27"].value or ""
+    assert SHEET_EXPENSE in e27, (
+        f"E27 should reference {SHEET_EXPENSE!r}, got: {e27!r}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Test 13: input cells E13:E17 are empty but have border and fill
+# ---------------------------------------------------------------------------
+
+def test_oer_input_cells_are_empty(wb):
+    oer_ws = wb[SHEET_OER]
+    for ref in ("E13", "E14", "E15", "E16", "E17"):
+        v = oer_ws[ref].value
+        assert v is None, f"OER {ref} should be empty (user input cell), got: {v!r}"
+
+
+def test_oer_input_cells_have_border(wb):
+    oer_ws = wb[SHEET_OER]
+    for ref in ("E13", "E14", "E15", "E16", "E17"):
+        b = oer_ws[ref].border
+        has_border = any(
+            s is not None and s != "none"
+            for s in (b.left.style, b.right.style, b.top.style, b.bottom.style)
+        )
+        assert has_border, f"OER {ref} (input cell) should have a border"
+
+
+def test_oer_input_cells_have_fill(wb):
+    oer_ws = wb[SHEET_OER]
+    for ref in ("E13", "E14", "E15", "E16", "E17"):
+        fill = oer_ws[ref].fill
+        assert fill is not None and fill.fgColor is not None, (
+            f"OER {ref} (input cell) should have a fill colour"
+        )
+
+
+# ---------------------------------------------------------------------------
+# Test 14: 費用詳細版 B10 has SUM formula; B5:B9 are empty with border+fill
+# ---------------------------------------------------------------------------
+
+def test_expense_sum_row_formula(wb):
+    exp_ws = wb[SHEET_EXPENSE]
+    assert exp_ws["B10"].value == "=SUM(B5:B9)", (
+        f"費用詳細版 B10 should be =SUM(B5:B9), got: {exp_ws['B10'].value!r}"
+    )
+
+
+def test_expense_input_cells_are_empty(wb):
+    exp_ws = wb[SHEET_EXPENSE]
+    for ref in ("B5", "B6", "B7", "B8", "B9"):
+        v = exp_ws[ref].value
+        assert v is None, f"費用詳細版 {ref} should be empty (input cell), got: {v!r}"
+
+
+def test_expense_input_cells_have_border(wb):
+    exp_ws = wb[SHEET_EXPENSE]
+    for ref in ("B5", "B6", "B7", "B8", "B9"):
+        b = exp_ws[ref].border
+        has_border = any(
+            s is not None and s != "none"
+            for s in (b.left.style, b.right.style, b.top.style, b.bottom.style)
+        )
+        assert has_border, f"費用詳細版 {ref} (input cell) should have a border"
 
 
 # ---------------------------------------------------------------------------

@@ -302,7 +302,8 @@ that the extraction looks correct, or a description of a discrepancy.
 1. For each sheet in the workbook, list the cells that require manual user input:
    - `読み取りレントロール`: vacant-unit rows (賃料、共益費、水道光熱費、駐車場、その他)
    - `直接還元法‗費用詳細版`: all expense rows (管理費、修繕費、損害保険料、固定資産税、その他)
-   - `直接還元法_OER`: assumption rows (空室損失率、貸倒損失、経費率、資本的支出、還元利回り)
+   - `直接還元法_OER`: user-input cells E13–E17 (空室損失率、貸倒損失率、経費率（運営費用率）、資本的支出（年額）、還元利回り)
+     ※ 費用詳細版は出力後にユーザーが入力する補助シートで、NOIには連動しない（経費率の妥当性確認用）
 2. Explicit statement: 「これらのセルはユーザーが手入力してください。Claudeは代わりに入力しません。」
 3. Clear question: 「必要なセルへの入力が完了したら教えてください。」
 
