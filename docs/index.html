@@ -29,6 +29,7 @@
       <span class="badge badge-oss">OSS</span>
       <span class="badge badge-license">Apache 2.0</span>
       <span class="badge badge-version">main</span>
+      <span class="badge badge-claude">Claude Code workflow</span>
     </div>
     <h1 class="hero-headline">
       レントロールから<br>
@@ -147,19 +148,22 @@
           </p>
           <table class="mini-sheet">
             <thead>
-              <tr><th>D列（項目）</th><th>E列（年額）</th></tr>
+              <tr><th>D列（項目）</th><th>E列（値）</th></tr>
             </thead>
             <tbody>
-              <tr><td>年額貸室賃料収入</td><td>=読み取りレントロール!C8</td></tr>
-              <tr><td>年額共益費収入</td><td>=読み取りレントロール!D8</td></tr>
-              <tr><td>（ユーザー定義行）</td><td>—</td></tr>
-              <tr><td>年額水道光熱費収入</td><td>=読み取りレントロール!E8</td></tr>
-              <tr><td>年額駐車場収入</td><td>=読み取りレントロール!F8</td></tr>
-              <tr><td>その他収入</td><td>=読み取りレントロール!G8</td></tr>
+              <tr><td>貸室賃料収入（年額）</td><td>=読み取りレントロール!…（自動）</td></tr>
+              <tr><td>共益費収入（年額）</td><td>=読み取りレントロール!…（自動）</td></tr>
+              <tr><td>水道光熱費収入（年額）</td><td>=読み取りレントロール!…（自動）</td></tr>
+              <tr><td>駐車場収入（年額）</td><td>=読み取りレントロール!…（自動）</td></tr>
+              <tr><td>その他収入（年額）</td><td>=読み取りレントロール!…（自動）</td></tr>
+              <tr><td>GPI 合計</td><td>=SUM(E5:E9)（自動）</td></tr>
               <tr class="user-row"><td>空室損失率</td><td>← 手入力</td></tr>
-              <tr class="user-row"><td>駐車場等の空室損失率</td><td>← 手入力</td></tr>
-              <tr class="user-row"><td>貸倒損失</td><td>← 手入力</td></tr>
+              <tr class="user-row"><td>貸倒損失率</td><td>← 手入力</td></tr>
+              <tr class="user-row"><td>経費率（運営費用率）</td><td>← 手入力</td></tr>
+              <tr class="user-row"><td>資本的支出（年額）</td><td>← 手入力</td></tr>
               <tr class="user-row"><td>還元利回り</td><td>← 手入力</td></tr>
+              <tr><td>EGI / NOI</td><td>=自動計算</td></tr>
+              <tr><td><strong>収益試算値</strong></td><td>=IFERROR(…/E17,"")（自動）</td></tr>
             </tbody>
           </table>
         </div>
@@ -268,6 +272,50 @@
   </div>
 </section>
 
+<!-- ━━━━━━━━━━━━ Section 5b: Claude Code / Package Skill ━━━━━━━━━━━ -->
+<section class="section section-claude">
+  <div class="container">
+    <h2>Claude Code / claude.ai で使う</h2>
+    <p class="section-sub">
+      Claude Code project workflow と Package Skill を実装しています。<br>
+      合成サンプルで動作確認済み。qualifying real-world PDF 評価は未完了（Issue #21 open）。
+    </p>
+    <div class="claude-cards">
+
+      <div class="claude-card">
+        <div class="claude-card-icon">⌨️</div>
+        <h3>Claude Code で使う</h3>
+        <p>リポジトリを clone して Claude Code で開くと、<code>/revenue-kun</code> スラッシュコマンドが使えます。</p>
+        <div class="code-block" style="margin-top:1rem;">
+          <div class="code-header">slash command</div>
+          <pre><code>/revenue-kun data/sample_rentroll_simple.pdf</code></pre>
+        </div>
+        <p style="font-size:0.85em;color:#555;margin-top:0.75rem;">
+          dry-run → 抽出確認（Checkpoint A）→ Excel 生成 → セルレビュー（Checkpoint B）の全ステップを補助します。
+        </p>
+      </div>
+
+      <div class="claude-card">
+        <div class="claude-card-icon">☁️</div>
+        <h3>claude.ai / Cowork で使う</h3>
+        <p>Package Skill（<code>skill/</code>）を使えば clone もターミナルも不要です。</p>
+        <ol style="font-size:0.9em;padding-left:1.2em;margin-top:0.5rem;">
+          <li>レントロール PDF をアップロード</li>
+          <li>dry-run で抽出内容を確認</li>
+          <li>収益試算 Excel をダウンロード</li>
+        </ol>
+        <p style="font-size:0.85em;color:#555;margin-top:0.75rem;">
+          空室損失率・還元利回り等はユーザーが Excel で手入力します。Claude は値を提案しません。
+        </p>
+      </div>
+
+    </div>
+    <p class="section-note">
+      ⚠ Claude Skill マーケットプレイスへの公開は未定です。Claude Skill リリース済みとは表記しません。
+    </p>
+  </div>
+</section>
+
 <!-- ━━━━━━━━━━━━━━ Section 6: What to edit ━━━━━━━━━━━━━━━━━━━ -->
 <section class="section section-edit">
   <div class="container">
@@ -296,13 +344,13 @@
       <div class="edit-card">
         <h3>直接還元法_OER</h3>
         <ul>
-          <li>空室損失率</li>
-          <li>駐車場等の空室損失率</li>
-          <li>貸倒損失</li>
-          <li>経費率</li>
-          <li>資本的支出</li>
-          <li>還元利回り</li>
+          <li>空室損失率（E13）</li>
+          <li>貸倒損失率（E14）</li>
+          <li>経費率・運営費用率（E15）</li>
+          <li>資本的支出・年額（E16）</li>
+          <li>還元利回り（E17）</li>
         </ul>
+        <p style="font-size:0.8em;color:#666;margin-top:0.5em;">入力後、EGI・NOI・収益試算値が自動計算されます</p>
       </div>
     </div>
   </div>
