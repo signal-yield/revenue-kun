@@ -127,6 +127,7 @@ img { max-width: 100%; height: auto; }
 .badge-oss     { background: rgba(255,255,255,0.20); color: #fff; }
 .badge-license { background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.9); }
 .badge-version { background: var(--c-accent); color: var(--c-primary); }
+.badge-claude  { background: #7c3aed; color: #fff; }
 
 .hero-headline {
   font-size: clamp(1.6rem, 4vw, 2.4rem);
@@ -498,6 +499,58 @@ img { max-width: 100%; height: auto; }
   left: 0;
   color: var(--c-accent);
   font-weight: 700;
+}
+
+/* ── Claude Code / Package Skill ─────────────────────────── */
+.section-claude {
+  background: #f5f3ff;
+  border-top: 3px solid #7c3aed;
+}
+
+.section-claude h2 {
+  color: #4c1d95;
+}
+
+.claude-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  margin-top: 1.5rem;
+}
+
+.claude-card {
+  background: var(--c-surface);
+  border: 1px solid #c4b5fd;
+  border-radius: var(--radius);
+  padding: 28px;
+  box-shadow: var(--shadow);
+}
+
+.claude-card-icon {
+  font-size: 2rem;
+  margin-bottom: 0.75rem;
+}
+
+.claude-card h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #4c1d95;
+  margin-bottom: 0.75rem;
+}
+
+.claude-card p {
+  font-size: 0.9rem;
+  color: var(--c-muted);
+}
+
+.section-note {
+  margin-top: 1.5rem;
+  font-size: 0.82rem;
+  color: var(--c-muted);
+  padding: 10px 16px;
+  background: #ede9fe;
+  border-radius: var(--radius-sm);
+  border-left: 3px solid #7c3aed;
 }
 
 /* ── Limitations ──────────────────────────────────────────── */
