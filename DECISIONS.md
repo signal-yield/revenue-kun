@@ -266,3 +266,26 @@ jucho-kun / tochi-satei-kun が採用している Package Skill 形式が同等�
 | [parallel] | Issue #21 sample PDF procurement | ⬜ Day 1 background |
 | F | Issue #21 — qualifying real-world PDF evaluation | ⬜ After procurement |
 | **Gate 2** | PR TIMES / note / LinkedIn | ⬜ After F |
+
+---
+
+## DEC-05: Codex 対応（マルチエージェント整備）— 2026-06-20
+
+**Decision**:
+revenue-kun を OpenAI Codex からも扱えるよう、`AGENTS.md`（root）と
+`.agents/skills/revenue-kun/SKILL.md` を整備する。横断ガードレールは `GUARDRAILS.md` を
+単一正本とし、各エージェント指示ファイルは複製せず参照する。**ユーザーの能動的決定**（ChatGPT 発ではない）。
+
+**Premise / rationale**:
+- Codex はリポジトリ内で動くため、エンジンを vendor せず `src/` を直接呼べる（claude.ai 用 `skill/` とは別構造）。
+- 刺さる層は AI エージェント開発者・PropTech・共同検証先（v0.1 本線の買い手とは別セグメント）。本線を遅らせない範囲で並行。
+- 白箱・再現性ファーストのブランドと整合。
+
+**Rejected / guarded against**:
+- `.claude/skills/` の再導入（旧 Option C・DEC-04 で撤回）。Codex 対応では作らない。
+- 「Claude/Codex 完全互換」「全エージェント対応」「リリース済み」表現。「整備中」に留める。
+
+**Withdrawal / review conditions**:
+- v0.1 本線（claude.ai パッケージ Skill）の着地を遅延させる兆候が出たら、Codex 対応を一時停止し本線優先。
+
+**Note**: Docker 対応は別タスク（companion）。本決定には含めない。
