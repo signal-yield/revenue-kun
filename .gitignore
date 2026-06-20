@@ -17,6 +17,8 @@ venv/
 
 # Claude Code セッション生成ファイル（コミット禁止）
 .agents/
+!.agents/skills/revenue-kun/
+!.agents/skills/revenue-kun/**
 skills-lock.json
 pr_body.md
 
