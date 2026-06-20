@@ -16,7 +16,11 @@ venv/
 .claude/
 
 # Claude Code セッション生成ファイル（コミット禁止）
-.agents/
+# .agents 配下は原則コミットしない（superpowers 等の他者スキルを巻き込まない）
+# revenue-kun（自作 Codex スキル）のサブツリーだけを追跡する
+.agents/*
+!.agents/skills/
+.agents/skills/*
 !.agents/skills/revenue-kun/
 !.agents/skills/revenue-kun/**
 skills-lock.json
