@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>revenue-kun — レントロールから直接還元法 Excel ワークブックを、コマンド一行で。</title>
-  <meta name="description" content="revenue-kun: レントロール（CSV・text-based PDF）から直接還元法 Excel ワークブックを生成する OSS CLI ツール。収益試算値の算出と欠損管理をサポートします。鑑定評価ではありません。" />
-  <meta property="og:title" content="revenue-kun — 直接還元法 Excel 出力 CLI" />
-  <meta property="og:description" content="レントロールから直接還元法 Excel ワークブックを、コマンド一行で。OSS — Apache 2.0" />
+  <title>revenue-kun — レントロールPDFをアップロードするだけで、直接還元法の収益試算Excelを。</title>
+  <meta name="description" content="revenue-kun: レントロール（CSV・text-based PDF）から直接還元法 Excel ワークブックを生成する OSS Skill。claude.ai / Cowork 上で動作。収益試算値の算出と欠損管理をサポートします。鑑定評価ではありません。" />
+  <meta property="og:title" content="revenue-kun — 直接還元法 収益試算 Excel 出力 Skill" />
+  <meta property="og:description" content="レントロールPDFをアップロードするだけで、直接還元法の収益試算Excelを。OSS — Apache 2.0" />
   <meta property="og:type" content="website" />
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -28,17 +28,16 @@
     <div class="hero-badge">
       <span class="badge badge-oss">OSS</span>
       <span class="badge badge-license">Apache 2.0</span>
-      <span class="badge badge-version">main</span>
-      <span class="badge badge-claude">Claude Code workflow</span>
+      <span class="badge badge-version">v0.2.0</span>
     </div>
     <h1 class="hero-headline">
-      レントロールから<br>
-      直接還元法 Excel ワークブックを、<br>
-      コマンド一行で。
+      レントロールPDFをアップロードするだけで、<br>
+      直接還元法の収益試算Excelを。
     </h1>
     <p class="hero-sub">
-      revenue-kun: open-source direct-capitalization CLI for rent roll verification.<br>
-      Generate a structured Excel workbook — OER / expense detail / rent roll — in one command.
+      claude.ai / Cowork 上で動くオープンソース Skill。レントロール（CSV・text-based PDF）を読み取り、<br>
+      収入側を自動集計した収益試算ワークブック（OER／費用詳細／レントロールの3シート）を出力します。
+      <span class="hero-sub-en">Open-source direct-capitalization Skill — upload a rent roll, get a structured Excel workbook.</span>
     </p>
     <div class="warn-badge">
       <span class="warn-icon">⚠</span>
@@ -46,7 +45,7 @@
     </div>
     <div class="hero-cta">
       <a href="https://github.com/signal-yield/revenue-kun" class="btn btn-primary">GitHub で見る</a>
-      <a href="https://github.com/signal-yield/revenue-kun#readme" class="btn btn-secondary">README を読む</a>
+      <a href="#usage" class="btn btn-secondary">使い方を見る</a>
     </div>
   </div>
 </section>
@@ -272,46 +271,40 @@
   </div>
 </section>
 
-<!-- ━━━━━━━━━━━━ Section 5b: Claude Code / Package Skill ━━━━━━━━━━━ -->
-<section class="section section-claude">
+<!-- Section 5b: claude.ai / Cowork Skill -->
+<section class="section section-claude" id="usage">
   <div class="container">
-    <h2>Claude Code / claude.ai で使う</h2>
+    <h2>claude.ai / Cowork で使う</h2>
     <p class="section-sub">
-      Claude Code project workflow と Package Skill を実装しています。<br>
-      合成サンプルで動作確認済み。qualifying real-world PDF 評価は未完了（Issue #21 open）。
+      revenue-kun は claude.ai / Cowork で動く OSS Skill（<code>skill/</code>）として実装しています。clone もターミナルも不要です。
     </p>
     <div class="claude-cards">
 
       <div class="claude-card">
-        <div class="claude-card-icon">⌨️</div>
-        <h3>Claude Code で使う</h3>
-        <p>リポジトリを clone して Claude Code で開くと、<code>/revenue-kun</code> スラッシュコマンドが使えます。</p>
-        <div class="code-block" style="margin-top:1rem;">
-          <div class="code-header">slash command</div>
-          <pre><code>/revenue-kun data/sample_rentroll_simple.pdf</code></pre>
-        </div>
+        <div class="claude-card-icon">☁️</div>
+        <h3>4ステップで収益試算Excel</h3>
+        <ol style="font-size:0.9em;padding-left:1.2em;margin-top:0.5rem;line-height:1.8;">
+          <li>Skill をリポジトリから導入（claude.ai / Cowork）</li>
+          <li>レントロール PDF をアップロード</li>
+          <li>dry-run で抽出内容（区画・月計・年計・欠損）を確認</li>
+          <li>収益試算 Excel をダウンロード</li>
+        </ol>
         <p style="font-size:0.85em;color:#555;margin-top:0.75rem;">
-          dry-run → 抽出確認（Checkpoint A）→ Excel 生成 → セルレビュー（Checkpoint B）の全ステップを補助します。
+          空室損失率・経費率・還元利回り等は、出力された Excel にユーザーが手入力します。<strong>Claude は値を提案しません。</strong>
         </p>
       </div>
 
       <div class="claude-card">
-        <div class="claude-card-icon">☁️</div>
-        <h3>claude.ai / Cowork で使う</h3>
-        <p>Package Skill（<code>skill/</code>）を使えば clone もターミナルも不要です。</p>
-        <ol style="font-size:0.9em;padding-left:1.2em;margin-top:0.5rem;">
-          <li>レントロール PDF をアップロード</li>
-          <li>dry-run で抽出内容を確認</li>
-          <li>収益試算 Excel をダウンロード</li>
-        </ol>
-        <p style="font-size:0.85em;color:#555;margin-top:0.75rem;">
-          空室損失率・還元利回り等はユーザーが Excel で手入力します。Claude は値を提案しません。
-        </p>
+        <div class="claude-card-icon">⌨️</div>
+        <h3>開発者向け：ローカル CLI</h3>
+        <p>ローカルでは CLI（<code>src/main.py</code>）としても利用できます。手順は README を参照してください。</p>
       </div>
 
     </div>
     <p class="section-note">
-      ⚠ Claude Skill マーケットプレイスへの公開は未定です。Claude Skill リリース済みとは表記しません。
+      ⚠ 合成サンプルPDFで動作確認済み。qualifying real-world PDF の評価は未完了（Issue #21 open）。
+      実物件PDFはサンプル検証の範囲外であり、実務検証済みとは表記しません。
+      Claude Skill マーケットプレイスへの公開は未定で、リリース済みとは表記しません。
     </p>
   </div>
 </section>
@@ -396,8 +389,8 @@
           <td>実施しません。欠損は <code>missing_info.md</code> に記録します。ユーザーが確認・入力してください。</td>
         </tr>
         <tr>
-          <td>GUI / Web UI</td>
-          <td>未実装。v0.4.1 は CLI のみです。</td>
+          <td>GUI / 専用Webアプリ</td>
+          <td>未実装。利用形態は claude.ai / Cowork Skill とローカル CLI（v0.2.0）。</td>
         </tr>
       </tbody>
     </table>
@@ -467,11 +460,11 @@
 <footer class="site-footer">
   <div class="container">
     <p>
-      revenue-kun v0.4.1 &nbsp;·&nbsp; Apache 2.0 License &nbsp;·&nbsp;
+      revenue-kun v0.2.0 &nbsp;·&nbsp; Apache 2.0 License &nbsp;·&nbsp;
       <a href="https://github.com/signal-yield/revenue-kun">GitHub</a>
     </p>
     <p class="footer-issues">
-      #19 remains open &nbsp;·&nbsp; #21 remains open &nbsp;·&nbsp; #48 remains open
+      #21 remains open
     </p>
   </div>
 </footer>

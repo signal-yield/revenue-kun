@@ -14,7 +14,7 @@ Design and scope decisions for revenue-kun.
 
 ---
 
-## DEC-01: Claude Code project workflow — packaging mechanism
+## DEC-01: Claude Code project workflow — packaging mechanism  [SUPERSEDED by DEC-04 — 2026-06-16]
 
 **Date**: 2026-06-16  
 **Status**: Decided (PR #63 merged)  
@@ -255,11 +255,11 @@ jucho-kun / tochi-satei-kun が採用している Package Skill 形式が同等�
 | D0 | Dependency smoke test | ✅ Passed |
 | A | `DECISIONS.md` entries DEC-01 / DEC-02 / DEC-03 + D0 | ✅ Merged |
 | PR #64 | `CLAUDE.md` (always-on operator instructions) | ✅ Merged |
-| PR B | `.claude/settings.json` (permission allowlist / denylist) | ✅ Merged PR #66 |
-| PR C | `.claude/commands/revenue-kun.md` (`/revenue-kun` command) | ✅ Merged PR #67 |
+| PR B | `.claude/settings.json` (permission allowlist / denylist) | ✅ Merged PR #66 → ❌ Reverted by DEC-04 |
+| PR C | `.claude/commands/revenue-kun.md` (`/revenue-kun` command) | ✅ Merged PR #67 → ❌ Reverted by DEC-04 |
 | PR D | E2E sample validation | ✅ Merged PR #68 |
 | OER | `直接還元法_OER` self-computing model | ✅ Merged PR #69 |
-| README | Claude Code project workflow section | ✅ Merged PR #70 |
+| README | Claude Code project workflow section | ✅ Merged PR #70 → ⚠ 別途 Skill 中心に改稿（LP/README タスク） |
 | DEC-04 | v0.1 配布形態 = Package Skill（Option C 撤回） | ✅ This PR |
 | Skill | `skill/` package + `build_skill.py` + self-test | ✅ This PR |
 | **Gate 1** | Early publish — Package Skill + 合成サンプル検証済み | ⬜ After this PR |
