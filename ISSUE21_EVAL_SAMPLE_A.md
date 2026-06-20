@@ -105,5 +105,5 @@ Issue #21 の完了条件：
 
 ---
 
-*revenue-kun v0.4.1 — Claude Code project workflow*
-*#19 remains open  #21 remains open  Issue #22 is completed  #48 remains open*
+*revenue-kun v0.2.0 — dev-time operator instructions*
+*#21 remains open*

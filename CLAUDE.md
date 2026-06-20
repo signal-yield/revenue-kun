@@ -1,4 +1,4 @@
-# CLAUDE.md — revenue-kun Claude Code Project Workflow
+# CLAUDE.md — revenue-kun 開発オペレーター指示（dev-time operator instructions）
 
 This file defines how Claude Code must behave when working in this repository.
 Read and apply all rules in this file before taking any action in this project.
@@ -9,7 +9,7 @@ Read and apply all rules in this file before taking any action in this project.
 
 **Repository**: `signal-yield/revenue-kun`
 **Tool name**: revenue-kun（収益還元クン）
-**Version**: v0.4.1
+**Version**: v0.2.0
 **License**: Apache 2.0
 **Type**: OSS research and verification CLI
 **Language**: Python 3.11+, openpyxl, pdfplumber
@@ -29,7 +29,7 @@ It is a research and verification support tool, not an automated appraisal syste
 
 | Item | Status |
 |------|--------|
-| CLI implementation | Complete (v0.4.1) |
+| CLI implementation | Complete (v0.2.0) |
 | `--excel-output` flag | Complete |
 | 3-sheet Excel workbook | Complete |
 | README documentation | Complete |
@@ -40,7 +40,6 @@ It is a research and verification support tool, not an automated appraisal syste
 | Claude Skill marketplace release | Not released |
 | Commercial SaaS | Not available |
 
-Claude Code project workflow packaging is in progress.
 **Claude Skill リリース済みとは表記しません。**
 
 ---
@@ -413,12 +412,11 @@ commit messages, issue comments, README text, LP text, or social media copy:
 
 ### Allowed wording
 
-- Claude Code project workflow
-- Claude-assisted workflow
-- future Claude Skill candidate
-- Claude Skill packaging under consideration
-- 「revenue-kun: OSS 研究・検証支援 CLI（Claude Code project workflow 実装中）」
-- 「収益試算値の確認を Claude Code が補助するワークフロー」
+- Package Skill (claude.ai / Cowork)
+- OSS 研究・検証支援ツール
+- future Claude Skill marketplace candidate（未公開）
+- 「revenue-kun: claude.ai / Cowork で動く OSS Skill ＋ ローカル CLI」
+- 「レントロールから収益試算 Excel を出力する OSS Skill」
 
 ### Prohibited wording
 
@@ -438,11 +436,10 @@ commit messages, issue comments, README text, LP text, or social media copy:
 
 ### Status badge rule
 
-The current LP badge (`docs/index.html`) reads `main`.
-Do not change any badge to `Claude Skill` or `Claude Code workflow` without
-explicit user instruction and without all three packaging files
-(CLAUDE.md, `.claude/settings.json`, `.claude/commands/revenue-kun.md`)
-having been authored, reviewed, and tested.
+The current LP badge (`docs/index.html`) reads `v0.2.0`.
+Do not change any badge to `Claude Skill` without explicit user instruction
+and without the packaged Skill (`skill/SKILL.md` + bundled scripts) authored
+and a sample E2E run passing.
 
 ---
 
@@ -467,6 +464,6 @@ auto-close the issue. Safe pattern: `#21 remains open`, `#19 remains open`.
 
 ---
 
-*revenue-kun v0.4.1 — Claude Code project workflow*
+*revenue-kun v0.2.0 — dev-time operator instructions*
 *Claude Skill リリース済みとは表記しません。*
 *#19 remains open  #21 remains open  Issue #22 is completed  #48 remains open*

@@ -12,10 +12,13 @@ __pycache__/
 venv/
 .venv/
 
-# ツール設定（settings.json・commands/ はプロジェクト共有のため追跡、settings.local.json は除外）
-.claude/*
-!.claude/settings.json
-!.claude/commands/
+# ツール設定（.claude/ は追跡しない）
+.claude/
+
+# Claude Code セッション生成ファイル（コミット禁止）
+.agents/
+skills-lock.json
+pr_body.md
 
 # Skill 実行時の出力（コミット禁止）
 skill/out/

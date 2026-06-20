@@ -126,8 +126,7 @@ img { max-width: 100%; height: auto; }
 
 .badge-oss     { background: rgba(255,255,255,0.20); color: #fff; }
 .badge-license { background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.9); }
-.badge-version { background: var(--c-accent); color: var(--c-primary); }
-.badge-claude  { background: #7c3aed; color: #fff; }
+.badge-version { background: var(--c-accent); color: #fff; }
 
 .hero-headline {
   font-size: clamp(1.6rem, 4vw, 2.4rem);
@@ -143,6 +142,13 @@ img { max-width: 100%; height: auto; }
   margin-bottom: 24px;
   max-width: 640px;
   line-height: 1.8;
+}
+
+.hero-sub-en {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.82rem;
+  color: rgba(255,255,255,0.7);
 }
 
 .warn-badge {
@@ -501,14 +507,14 @@ img { max-width: 100%; height: auto; }
   font-weight: 700;
 }
 
-/* ── Claude Code / Package Skill ─────────────────────────── */
+/* ── claude.ai / Cowork Skill ────────────────────────────── */
 .section-claude {
-  background: #f5f3ff;
-  border-top: 3px solid #7c3aed;
+  background: var(--c-primary-lt);
+  border-top: 3px solid var(--c-accent);
 }
 
 .section-claude h2 {
-  color: #4c1d95;
+  color: var(--c-primary);
 }
 
 .claude-cards {
@@ -520,7 +526,7 @@ img { max-width: 100%; height: auto; }
 
 .claude-card {
   background: var(--c-surface);
-  border: 1px solid #c4b5fd;
+  border: 1px solid var(--c-accent);
   border-radius: var(--radius);
   padding: 28px;
   box-shadow: var(--shadow);
@@ -534,7 +540,7 @@ img { max-width: 100%; height: auto; }
 .claude-card h3 {
   font-size: 1rem;
   font-weight: 700;
-  color: #4c1d95;
+  color: var(--c-primary);
   margin-bottom: 0.75rem;
 }
 
@@ -548,9 +554,9 @@ img { max-width: 100%; height: auto; }
   font-size: 0.82rem;
   color: var(--c-muted);
   padding: 10px 16px;
-  background: #ede9fe;
+  background: var(--c-surface);
   border-radius: var(--radius-sm);
-  border-left: 3px solid #7c3aed;
+  border-left: 3px solid var(--c-accent);
 }
 
 /* ── Limitations ──────────────────────────────────────────── */

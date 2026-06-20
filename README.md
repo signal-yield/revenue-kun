@@ -1,4 +1,4 @@
-# revenue-kun（収益還元クン） v0.4.1
+# revenue-kun（収益還元クン） v0.2.0
 
 直接還元法による**収益試算ツール**（CLI）。レントロールと前提条件から
 NOI（運営純収益）を算出し、**収益試算値**と感応度分析を出力します。
@@ -371,20 +371,19 @@ python src/main.py --assumptions assumptions.sample.yaml --rent-roll-pdf data/sa
 
 ---
 
-## Claude Code project workflow
+## claude.ai / Cowork Skill
 
-このリポジトリは **Claude Code project workflow** の実装を進めています。
+revenue-kun は **claude.ai / Cowork で動く OSS Skill**（`skill/` ディレクトリ）として実装しています。
+clone もターミナルも不要で、レントロール PDF をアップロードするだけで収益試算 Excel を出力できます。
 
 | ファイル | 内容 |
 |----------|------|
-| `CLAUDE.md` | Claude Code の動作ルール（免責・Checkpoint・禁止コマンド等） |
-| `.claude/settings.json` | Bash 権限許可リスト・禁止リスト |
-| `.claude/commands/revenue-kun.md` | `/revenue-kun` スラッシュコマンド（dry-run → Checkpoint A → full run → Checkpoint B） |
-
-Claude Code を使うと `/revenue-kun data/sample_rentroll_simple.pdf` のみでワークフロー全体（ドライラン → 抽出確認 → Excel 生成 → セルレビュー）を補助できます。
+| `CLAUDE.md` | 開発時オペレーター指示（免責・Checkpoint・禁止コマンド等） |
+| `skill/SKILL.md` | Skill エントリポイント（トリガー・免責・入出力定義） |
+| `build_skill.py` | `src/` → `skill/scripts/` 同期スクリプト |
 
 > qualifying real-world PDF 評価は未完了（Issue #21 open）。実務検証済みとは表記しません。
-> Claude Skill リリース済みとは表記しません。
+> Claude Skill マーケットプレイスへの公開は未定。Claude Skill リリース済みとは表記しません。
 
 ---
 
@@ -590,6 +589,6 @@ NOI（運営純収益）   = EGI − 運営費用合計
 
 ## バージョン・ライセンス
 
-**v0.4.1** — Apache License 2.0（Copyright 2026 km）
+**v0.2.0** — Apache License 2.0（Copyright 2026 km）
 
 変更履歴は [CHANGELOG.md](CHANGELOG.md) を参照してください。
