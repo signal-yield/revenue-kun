@@ -1,10 +1,10 @@
-# revenue-kun（収益還元クン） v0.2.0
+# revenue-kun（収益還元クン） v0.4.1
 
 直接還元法による**収益試算ツール**（CLI）。レントロールと前提条件から
 NOI（運営純収益）を算出し、**収益試算値**と感応度分析を出力します。
 オプションで直接還元法 Excel ワークブック（`.xlsx`）を生成できます。
 
-> **v0.4.1 以降 — 直接還元法 Excel ワークブック出力（`--excel-output`）**  
+> **v0.4.1 — 直接還元法 Excel ワークブック出力（`--excel-output`）**  
 > `--excel-output <path>` を指定すると、抽出したレントロール行から3シート構成の直接還元法 Excel ワークブックを生成します。  
 > 詳細は「[直接還元法 Excel ワークブック出力](#直接還元法-excel-ワークブック出力)」セクションを参照してください。  
 > qualifying real-world PDF 評価は未完了（Issue #21 open）。実務検証済みとは表記しません。
@@ -589,6 +589,6 @@ NOI（運営純収益）   = EGI − 運営費用合計
 
 ## バージョン・ライセンス
 
-**v0.2.0** — Apache License 2.0（Copyright 2026 km）
+**v0.4.1** — Apache License 2.0（Copyright 2026 km）
 
 変更履歴は [CHANGELOG.md](CHANGELOG.md) を参照してください。
