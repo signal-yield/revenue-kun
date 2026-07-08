@@ -54,9 +54,19 @@ _HEADER_KEYS: list[tuple[str, str]] = [
     ("入居", "status"), ("空室", "status"), ("稼働", "status"), ("状況", "status"),
     ("属性", "status"),  # 一部物件概要書で occupancy 列に使われる表記
     ("occupancy", "status"), ("status", "status"),
+    # ── water（水道代 / 水道費）── 付帯収入・収入サイド（運営費用の水道光熱費とは別）
+    ("水道代", "water"), ("水道費", "water"),
+    # ── parking（駐車場収入）── 付帯収入
+    ("駐車場収入", "parking"), ("駐車場", "parking"),
+    # ── other_income（その他収入）── 付帯収入（具体的な表記のみ対応）
+    ("その他収入", "other_income"),
     # ── notes（備考 / メモ / Remarks）── オプション列、現行処理では未使用
     ("備考", "notes"), ("メモ", "notes"), ("remarks", "notes"), ("notes", "notes"),
 ]
+
+# 付帯収入として認識する canonical key の集合（config.OPTIONAL_INCOME_CANONICAL_KEYS と同値）。
+# pdf_extract 内で import を避けるためここで再定義する。
+_OPTIONAL_INCOME_KEYS: frozenset[str] = frozenset({"water", "parking", "other_income"})
 
 # これらの列が認識できなければ抽出を継続しない（必須列）
 _REQUIRED_KEYS = {"room": "部屋番号", "rent": "月額賃料", "status": "入居状況"}
@@ -98,6 +108,7 @@ class ExtractionReport:
     column_map: dict[str, int] = field(default_factory=dict)
     notes: list[str] = field(default_factory=list)
     failure_reason: str | None = None  # safe failure 時にセットされる
+    optional_income_found: list[str] = field(default_factory=list)  # 認識された付帯収入 canonical key
 
 
 def _clean(text: str | None) -> str | None:
@@ -253,6 +264,9 @@ def extract_rent_roll_from_pdf(
                                 report.notes.append(
                                     f"任意列「{label}」が無いため当該項目は欠損として扱います。"
                                 )
+                        for oi_key in _OPTIONAL_INCOME_KEYS:
+                            if oi_key in col_map:
+                                report.optional_income_found.append(oi_key)
                         break
                 if not col_map:
                     # このページでは必須列が揃うヘッダー行を見つけられなかった → 次ページへ
@@ -283,8 +297,13 @@ def extract_rent_roll_from_pdf(
                 cam = _to_number(get("cam"))
                 status = _normalize_status(get("status"))
                 use = _clean(get("use"))
+                # 付帯収入（optional income）— 常に抽出し RentRollUnit に保持する。
+                # GPI への算入は assumptions.optional_income 設定で制御する（noi.py 側）。
+                water = _to_number(get("water"))
+                parking = _to_number(get("parking"))
+                other_income = _to_number(get("other_income"))
 
-                # 欠損セルのカウント（抽出対象6項目のうち空だったもの）
+                # 欠損セルのカウント（コア6項目のみ。付帯収入は任意列のためカウント外）
                 for v in (use, area, rent, cam, status):
                     if v is None:
                         report.cells_missing += 1
@@ -299,6 +318,9 @@ def extract_rent_roll_from_pdf(
                         月額共益費_円=cam,
                         稼働状況=status,
                         契約満了日=None,        # 本PDFの抽出対象外
+                        月額水道代_円=water,
+                        月額駐車場収入_円=parking,
+                        月額その他収入_円=other_income,
                     )
                 )
                 report.rows_extracted += 1

@@ -135,12 +135,23 @@ def run(
             "cells_missing": report.cells_missing,
             "column_map": report.column_map,
             "notes": report.notes,
+            "optional_income_found": report.optional_income_found,
         }
         rr_source = report.pdf_name
         print(f"PDF抽出: {report.pdf_name} から {report.rows_extracted} 区画を抽出しました"
               f"（欠損セル {report.cells_missing} 件）。")
         for n in report.notes:
             print(f"  [注記] {n}")
+        if report.optional_income_found:
+            oi_cfg = assumptions.optional_income
+            for oi_key in report.optional_income_found:
+                if oi_cfg.include_in_gpi and oi_key in oi_cfg.columns:
+                    print(f"  [付帯収入] {oi_key} 列を抽出しました → GPI に算入します（opt-in）。")
+                else:
+                    print(
+                        f"  [付帯収入] {oi_key} 列を抽出しましたが、"
+                        "optional_income.include_in_gpi が false のため GPI には算入していません。"
+                    )
         _print_diagnostics_summary(
             input_type="PDF",
             units=report.rows_extracted,
@@ -215,7 +226,8 @@ def run(
 
     # 10. 直接還元法 Excel ワークブック（--excel-output 指定時のみ）
     if excel_output_path is not None:
-        dc_rows = [DirectCapRow.from_rent_roll_unit(u) for u in units]
+        oi_cfg = assumptions.optional_income
+        dc_rows = [DirectCapRow.from_rent_roll_unit(u, oi_cfg) for u in units]
         write_direct_cap_workbook(excel_output_path, dc_rows)
 
     print("-" * 64)

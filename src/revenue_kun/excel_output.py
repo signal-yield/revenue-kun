@@ -29,6 +29,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
+from .config import OptionalIncomeConfig
 from .rent_roll import RentRollUnit
 
 # ---------------------------------------------------------------------------
@@ -98,22 +99,34 @@ class DirectCapRow:
     備考: str | None = None
 
     @classmethod
-    def from_rent_roll_unit(cls, unit: RentRollUnit) -> DirectCapRow:
+    def from_rent_roll_unit(
+        cls,
+        unit: RentRollUnit,
+        oi_config: OptionalIncomeConfig | None = None,
+    ) -> DirectCapRow:
         """Convert a RentRollUnit to a DirectCapRow.
 
-        Fields absent from RentRollUnit (水道光熱費/駐車場/その他収入) are
-        left as None so the user can fill them in Excel.
+        oi_config controls which optional income columns are populated.
+        When include_in_gpi=False (default) or oi_config is None, optional
+        income columns are left as None so the user can fill them in Excel.
         Vacant units receive the standard 備考 note automatically.
         """
         note = _VACANT_NOTE if not unit.is_occupied else None
+        oi = oi_config or OptionalIncomeConfig()
+
+        def _oi(key: str) -> float | None:
+            if not oi.include_in_gpi or key not in oi.columns:
+                return None
+            return unit.get_optional_income(key)
+
         return cls(
             区画=unit.区画,
             ステータス=unit.稼働状況,
             月額賃料=unit.月額賃料_円,
             月額共益費=unit.月額共益費_円,
-            月額水道光熱費=None,
-            月額駐車場=None,
-            月額その他収入=None,
+            月額水道光熱費=_oi("water"),
+            月額駐車場=_oi("parking"),
+            月額その他収入=_oi("other_income"),
             備考=note,
         )
 
