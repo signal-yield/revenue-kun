@@ -52,6 +52,7 @@ _HEADER_KEYS: list[tuple[str, str]] = [
     # a status alias for standalone headers such as "入居" or "入居/空室".
     ("ステータス", "status"),
     ("入居", "status"), ("空室", "status"), ("稼働", "status"), ("状況", "status"),
+    ("属性", "status"),  # 一部物件概要書で occupancy 列に使われる表記
     ("occupancy", "status"), ("status", "status"),
     # ── notes（備考 / メモ / Remarks）── オプション列、現行処理では未使用
     ("備考", "notes"), ("メモ", "notes"), ("remarks", "notes"), ("notes", "notes"),
@@ -78,6 +79,12 @@ _DATE_HEADER_DENY: frozenset[str] = frozenset({"入居日", "開始日", "満了
 # total / subtotal row. Matched as full string equality, not substring, to avoid
 # accidentally dropping room numbers that happen to contain these characters.
 _SUMMARY_ROW_LABELS: frozenset[str] = frozenset({"合計", "小計", "総計", "計", "total", "subtotal"})
+
+# Room-field prefixes that identify monthly/annual summary rows.
+# These rows start with a Japanese label followed by amount data (e.g. "月額 601,000 …").
+# Matched as startswith after collapsing whitespace, so "月額601,000…" is caught
+# while normal room IDs like "A-101" or "1F-01" are never affected.
+_SUMMARY_ROW_PREFIXES: frozenset[str] = frozenset({"月額", "年額"})
 
 
 @dataclass
@@ -160,6 +167,12 @@ def _is_non_data_row(room: str, raw: list[str | None], col_map: dict[str, int]) 
     if room_normalized in _SUMMARY_ROW_LABELS:
         return True
 
+    # 4. 月次・年次集計プレフィックスで始まる行（例: "月額 601,000 …", "年額 7,212,000 …"）
+    #    集計テーブルの月計・年計行が room 列に値を持つ場合を除外する。
+    #    完全一致ではなく前方一致（"月額" で始まる長い文字列を捕捉するため）。
+    if any(room_normalized.startswith(p) for p in _SUMMARY_ROW_PREFIXES):
+        return True
+
     return False
 
 
@@ -214,6 +227,7 @@ def extract_rent_roll_from_pdf(
     report = ExtractionReport(pdf_name=path.name)
     units: list[RentRollUnit] = []
     col_map: dict[str, int] = {}
+    _any_table_found = False  # ページをまたいだヘッダー探索のため
 
     with pdfplumber.open(str(path)) as pdf:
         report.pages = len(pdf.pages)
@@ -222,33 +236,28 @@ def extract_rent_roll_from_pdf(
             if not table:
                 continue
 
+            _any_table_found = True
             start = 0
-            # 先頭行をヘッダーとしてマッピングを構築
+            # ヘッダー行を走査して確定する（row[0] 固定ではなく最初の10行を探索）。
+            # 表紙・小見出し行がデータより前にある PDF に対応する。
             if not col_map:
-                col_map = _build_column_map(table[0])
+                header_idx: int | None = None
+                for hi, hrow in enumerate(table[:10]):
+                    candidate = _build_column_map(hrow)
+                    if all(k in candidate for k in _REQUIRED_KEYS):
+                        col_map = candidate
+                        report.column_map = col_map
+                        header_idx = hi
+                        for key, label in (("area", "面積"), ("cam", "共益費"), ("use", "用途")):
+                            if key not in col_map:
+                                report.notes.append(
+                                    f"任意列「{label}」が無いため当該項目は欠損として扱います。"
+                                )
+                        break
                 if not col_map:
-                    report.failure_reason = (
-                        f"PDF '{path.name}' のヘッダー行を認識できませんでした。"
-                        "列名（部屋番号/月額賃料/入居状況 等）を確認してください。"
-                    )
-                    raise RentRollExtractionError(report.failure_reason, report=report)
-                # 必須列の存在チェック（欠ければ明示的エラーで停止）
-                missing_cols = [
-                    label for key, label in _REQUIRED_KEYS.items() if key not in col_map
-                ]
-                if missing_cols:
-                    cols_text = "、".join(missing_cols)
-                    report.failure_reason = (
-                        f"PDF '{path.name}' に必須列が見つかりません: "
-                        f"{cols_text}。補完せず処理を停止します。"
-                    )
-                    raise RentRollExtractionError(report.failure_reason, report=report)
-                report.column_map = col_map
-                # 任意列が無い場合は注記（処理は継続）
-                for key, label in (("area", "面積"), ("cam", "共益費"), ("use", "用途")):
-                    if key not in col_map:
-                        report.notes.append(f"任意列「{label}」が無いため当該項目は欠損として扱います。")
-                start = 1
+                    # このページでは必須列が揃うヘッダー行を見つけられなかった → 次ページへ
+                    continue
+                start = header_idx + 1
 
             for raw in table[start:]:
                 # 完全な空行はスキップ
@@ -295,13 +304,18 @@ def extract_rent_roll_from_pdf(
                 report.rows_extracted += 1
 
     # ── Post-extraction safe failure checks ─────────────────────────────────
-    # Check 1: 全ページで extract_table() が None → テーブル未検出
-    #   ※ ループ内の「ヘッダー行未認識」とは区別する（そちらはループ内で raise 済み）
+    # Check 1: col_map が未確定 → テーブルが無いかヘッダーを認識できなかった
     if not col_map:
-        report.failure_reason = (
-            "どのページからもレントロールのテーブルを検出できませんでした。"
-            "text-based の単純な表形式PDFを使用してください（スキャンPDF・OCRは非対応）。"
-        )
+        if _any_table_found:
+            report.failure_reason = (
+                f"PDF '{path.name}' のヘッダー行を認識できませんでした。"
+                "列名（部屋番号/月額賃料/入居状況 等）を確認してください。"
+            )
+        else:
+            report.failure_reason = (
+                "どのページからもレントロールのテーブルを検出できませんでした。"
+                "text-based の単純な表形式PDFを使用してください（スキャンPDF・OCRは非対応）。"
+            )
         raise RentRollExtractionError(
             f"PDF '{path.name}': {report.failure_reason}",
             report=report,

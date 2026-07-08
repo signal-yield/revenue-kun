@@ -10,7 +10,7 @@ from revenue_kun.pdf_extract import (
     _resolve_header_key,
     extract_rent_roll_from_pdf,
 )
-from revenue_kun.sample_pdf import PATTERNS, build_pdf, build_text_only_pdf, generate_sample_pdf
+from revenue_kun.sample_pdf import PATTERNS, build_pdf, build_pdf_with_preamble, build_text_only_pdf, generate_sample_pdf
 
 
 @pytest.fixture(scope="module")
@@ -332,7 +332,7 @@ def test_status_column_wins_over_tenant_name(tmp_path):
     assert {u.区画 for u in occupied} == {"101", "103"}
     vacant = [u for u in units if not u.is_occupied]
     assert len(vacant) == 1
-    assert vacant[0].区画 == "102"
+    assert vacant[0].区画 == "102"
 
 def test_standalone_nyukyo_header_recognized(tmp_path):
     """入居 standalone header is recognized as status (no tenant-name false positive)."""
@@ -591,3 +591,100 @@ def test_kei_in_non_room_field_does_not_exclude_row(tmp_path):
     units, rep = extract_rent_roll_from_pdf(p)
     assert rep.rows_extracted == 3
     assert {u.区画 for u in units} == {"101", "102", "103"}
+
+
+# --- 属性列 → status マッピング（実物件 PDF 対応 / Issue #21 関連） ──────────────
+
+def test_zokusei_column_recognized_as_status(tmp_path):
+    """「属性」列ヘッダーが status として認識され、「入居中」が occupancy 判定に使える。
+
+    実物件 PDF で「入居状況」ではなく「属性」という列名が使われるケースに対応。
+    """
+    p = tmp_path / "zokusei.pdf"
+    headers = ["号室", "専有面積", "賃料", "共益費", "属性"]
+    rows = [
+        ["101", "22.0", "32,000", "3,000", "入居中"],
+        ["102", "22.0", "35,000", "3,000", "入居中"],
+        ["103", "23.0", "",       "",       "空室"],
+    ]
+    build_pdf(p, headers, rows)
+    units, rep = extract_rent_roll_from_pdf(p)
+    assert "status" in rep.column_map, "「属性」が status にマップされていない"
+    assert rep.rows_extracted == 3
+    occupied = [u for u in units if u.is_occupied]
+    assert len(occupied) == 2
+    assert {u.区画 for u in occupied} == {"101", "102"}
+    vacant = [u for u in units if not u.is_occupied]
+    assert len(vacant) == 1
+    assert vacant[0].区画 == "103"
+
+
+# --- 月額・年額 prefix 行のフィルタ（実物件 PDF の集計行除外） ──────────────────
+
+@pytest.mark.parametrize("room_label", [
+    "月額 601,000 46,000 37,295 0 0 0 0 《修繕履歴》",  # real-world 月額 集計行
+    "年額 7,212,000 552,000 447,540 0 0 0",             # real-world 年額 集計行
+    "月額",                                               # prefix のみ
+    "年額合計",                                           # prefix + 余剰文字
+])
+def test_monthly_annual_prefix_row_is_non_data_row(room_label):
+    """月額・年額で始まる room 値を持つ行は集計行として除外される。"""
+    from revenue_kun.pdf_extract import _is_non_data_row
+    assert _is_non_data_row(room_label, [None, None], {"rent": 1}), (
+        f"「{room_label}」は集計行として除外されるべきですが、除外されませんでした"
+    )
+
+
+def test_monthly_annual_prefix_row_excluded_from_extraction(tmp_path):
+    """月額・年額 集計行はレントロール抽出結果に含まれない。
+
+    実物件 PDF（グリーン蛍 概要書）のレイアウトを模倣した回帰テスト。
+    """
+    p = tmp_path / "with_monthly_annual.pdf"
+    headers = ["号室", "専有面積", "賃料", "共益費", "属性"]
+    rows = [
+        ["101", "22.0", "32,000", "3,000", "入居中"],
+        ["102", "22.0", "35,000", "3,000", "入居中"],
+        ["103", "23.0", "36,000", "3,000", "入居中"],
+        # 集計行 — 除外されるべき
+        ["月額 103,000 9,000 0 0 《修繕履歴》", "", "", "", ""],
+        ["年額 1,236,000 108,000 0 0",           "", "", "", ""],
+    ]
+    build_pdf(p, headers, rows)
+    units, rep = extract_rent_roll_from_pdf(p)
+    assert rep.rows_extracted == 3, (
+        f"集計行を含む 5 行から 3 行のみ抽出されるべきですが {rep.rows_extracted} 行でした"
+    )
+    rooms = {u.区画 for u in units}
+    assert rooms == {"101", "102", "103"}
+
+
+# --- ヘッダー行がテーブル先頭以外にある PDF（実物件レイアウト） ──────────────────
+
+def test_header_at_row2_detected(tmp_path):
+    """ヘッダー行がテーブルの row[2] にある場合でも正しく検出され抽出される。
+
+    実物件 PDF（複合レイアウト）では表紙タイトル・小見出し行がテーブル先頭に来るケース。
+    """
+    p = tmp_path / "header_at_row2.pdf"
+    preamble = [
+        ["グリーン蛍 10,200\n販売価格：万円", "", "", "", ""],  # row[0]: タイトル行
+        ["《賃貸状況》", "", "", "", ""],                        # row[1]: 小見出し行
+    ]
+    headers = ["号室", "専有面積", "賃料", "共益費", "属性"]    # row[2]: 実ヘッダー
+    rows = [
+        ["101", "22.0", "32,000", "3,000", "入居中"],
+        ["102", "22.0", "35,000", "3,000", "入居中"],
+        ["103", "23.0", "",       "",       "空室"],
+    ]
+    build_pdf_with_preamble(p, preamble, headers, rows)
+    units, rep = extract_rent_roll_from_pdf(p)
+    assert rep.rows_extracted == 3, (
+        f"ヘッダーが row[2] にある PDF から 3 件抽出されるべきですが {rep.rows_extracted} 件でした"
+    )
+    assert "room" in rep.column_map
+    assert "rent" in rep.column_map
+    assert "status" in rep.column_map
+    assert {u.区画 for u in units} == {"101", "102", "103"}
+    occupied = [u for u in units if u.is_occupied]
+    assert len(occupied) == 2
