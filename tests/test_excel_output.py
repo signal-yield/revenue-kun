@@ -172,34 +172,69 @@ def test_annual_total_row_formulas_use_times_12(wb):
 # Test 5: OER E5:E9 reference the annual total row in 読み取りレントロール
 # ---------------------------------------------------------------------------
 
-def test_oer_income_cells_reference_rent_roll_annual_row(wb):
+def test_oer_core_income_cells_reference_rent_roll_annual_row(wb):
+    """E5 (賃料) / E6 (共益費) は常に 読み取りレントロール annual row を参照する。"""
     rr_ws = wb[SHEET_RENT_ROLL]
     annual_row = _find_row_by_label(rr_ws, 1, "年計")
     assert annual_row is not None
 
     oer_ws = wb[SHEET_OER]
-    for cell_ref in ("E5", "E6", "E7", "E8", "E9"):
+    for cell_ref in ("E5", "E6"):   # 賃料・共益費は常に cross-sheet ref
         formula = oer_ws[cell_ref].value
         assert isinstance(formula, str) and formula.startswith("="), (
             f"OER {cell_ref} should be a formula, got: {formula!r}"
         )
-        # Must reference SHEET_RENT_ROLL
         assert SHEET_RENT_ROLL in formula, (
             f"OER {cell_ref} should reference {SHEET_RENT_ROLL!r}, got: {formula!r}"
         )
-        # Must reference the correct annual total row number
         assert str(annual_row) in formula, (
             f"OER {cell_ref} should reference row {annual_row}, got: {formula!r}"
         )
+
+
+def test_oer_optional_income_cells_zero_when_optout(wb):
+    """デフォルト（oi_config 未指定 = opt-out）では E7/E8/E9 が =0。
+    読み取りレントロールに水道代値があっても GPI には算入しない。"""
+    oer_ws = wb[SHEET_OER]
+    for cell_ref in ("E7", "E8", "E9"):
+        formula = oer_ws[cell_ref].value
+        assert formula == "=0", (
+            f"OER {cell_ref} should be =0 in opt-out mode, got: {formula!r}"
+        )
+
+
+def test_oer_optional_income_optout_label_shows_excluded(wb):
+    """opt-out 時の付帯収入行ラベルに「算入対象外」が含まれる。"""
+    oer_ws = wb[SHEET_OER]
+    for row_num in (7, 8, 9):
+        label = oer_ws.cell(row_num, 4).value or ""
+        assert "算入対象外" in label, (
+            f"OER row {row_num} D column should contain '算入対象外', got: {label!r}"
+        )
+
+
+def test_oer_optional_income_rent_roll_values_visible_regardless(workbook_path):
+    """読み取りレントロールには水道代収入値が常に表示される（opt-out でも）。
+    _make_rows() は月額水道光熱費=2_000 を含む — opt-out でも消えてはいけない。"""
+    from openpyxl import load_workbook
+    wb = load_workbook(workbook_path)
+    rr_ws = wb[SHEET_RENT_ROLL]
+    # 行2 (101号室) は月額水道光熱費=2_000 が設定されている
+    water_col = _C_UTIL  # 5
+    assert rr_ws.cell(2, water_col).value == 2_000, (
+        "読み取りレントロール row2 水道代収入列は opt-out でも表示されるべき"
+    )
 
 
 # ---------------------------------------------------------------------------
 # Test 6: OER E5:E9 formulas do NOT contain *12
 # ---------------------------------------------------------------------------
 
-def test_oer_income_cells_do_not_multiply_by_12(wb):
+def test_oer_core_income_cells_do_not_multiply_by_12(wb):
+    """E5/E6 (賃料/共益費) は annual total 参照なので *12 不要。
+    E7-E9 は opt-out 時 =0 なので *12 を含まない（別テストで確認）。"""
     oer_ws = wb[SHEET_OER]
-    for cell_ref in ("E5", "E6", "E7", "E8", "E9"):
+    for cell_ref in ("E5", "E6"):
         formula = oer_ws[cell_ref].value or ""
         normalized = formula.replace(" ", "")
         assert "*12" not in normalized, (

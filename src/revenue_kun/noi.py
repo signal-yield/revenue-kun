@@ -24,6 +24,10 @@ class NOIResult:
     net_income: float               # 直接還元用純収益（NOI−CAPEX）
     warnings: list[str] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
+    # 収入カテゴリ別内訳（GPI の構成要素）
+    rent_income: float = 0.0        # 賃料収入（年額）
+    cam_income: float = 0.0         # 共益費収入（年額）
+    optional_income_total: float = 0.0  # 付帯収入合計（opt-in 時のみ）
 
 
 def compute_noi(units: list[RentRollUnit], assumptions: Assumptions) -> NOIResult:
@@ -32,15 +36,18 @@ def compute_noi(units: list[RentRollUnit], assumptions: Assumptions) -> NOIResul
     notes: list[str] = []
 
     # --- 潜在総収入(GPI) -------------------------------------------------
-    # 現行賃料ベース。稼働区画の賃料を年額換算して合算する。
+    # GPI = 賃料収入 + 共益費収入 + 付帯収入（opt-in 時のみ）
     # 稼働区画で賃料が欠損している場合は補完せず、GPI から除外して警告する。
-    gpi = 0.0
+    rent_income = 0.0
+    cam_income = 0.0
+    optional_income_total = 0.0
+    oi_config = assumptions.optional_income
+
     for u in units:
         if not u.is_occupied:
             # 空室区画の市場賃料は不明。推測補完しない（欠損扱いは missing 側）。
             continue
-        monthly = u.月額収入_円
-        if monthly is None:
+        if u.月額賃料_円 is None:
             # 必須項目（月額賃料）の欠損。補完せず GPI から除外する。
             warnings.append(
                 f"区画 {u.区画}: 稼働中だが月額賃料（必須）が欠損のため GPI から除外しました（補完なし）。"
@@ -51,9 +58,25 @@ def compute_noi(units: list[RentRollUnit], assumptions: Assumptions) -> NOIResul
             warnings.append(
                 f"区画 {u.区画}: 共益費（任意）が欠損のため 0 として算入しました（missing_info に記録）。"
             )
-        gpi += monthly * 12
+        r = u.月額賃料_円
+        c = u.月額共益費_円 if u.月額共益費_円 is not None else 0.0
+        rent_income += r * 12
+        cam_income += c * 12
+
+        # 付帯収入（opt-in 時のみ算入）— 水道代は収入サイド・費用サイドと混同しない
+        if oi_config.include_in_gpi:
+            for key in oi_config.columns:
+                monthly_oi = u.get_optional_income(key)
+                if monthly_oi is not None:
+                    optional_income_total += monthly_oi * 12
+
+    gpi = rent_income + cam_income + optional_income_total
 
     notes.append("GPI は稼働区画の現行賃料ベース（年額）で集計しています。")
+    if oi_config.include_in_gpi and oi_config.columns:
+        notes.append(
+            f"付帯収入（{', '.join(oi_config.columns)}）を GPI に算入しました（opt-in）。"
+        )
 
     # --- 空室損失 -------------------------------------------------------
     if assumptions.vacancy_rate is None:
@@ -100,4 +123,7 @@ def compute_noi(units: list[RentRollUnit], assumptions: Assumptions) -> NOIResul
         net_income=net_income,
         warnings=warnings,
         notes=notes,
+        rent_income=rent_income,
+        cam_income=cam_income,
+        optional_income_total=optional_income_total,
     )
