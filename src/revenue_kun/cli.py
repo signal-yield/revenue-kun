@@ -226,9 +226,8 @@ def run(
 
     # 10. 直接還元法 Excel ワークブック（--excel-output 指定時のみ）
     if excel_output_path is not None:
-        oi_cfg = assumptions.optional_income
-        dc_rows = [DirectCapRow.from_rent_roll_unit(u, oi_cfg) for u in units]
-        write_direct_cap_workbook(excel_output_path, dc_rows)
+        dc_rows = [DirectCapRow.from_rent_roll_unit(u) for u in units]
+        write_direct_cap_workbook(excel_output_path, dc_rows, oi_config=assumptions.optional_income)
 
     print("-" * 64)
     print("出力ファイル:")

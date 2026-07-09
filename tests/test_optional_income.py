@@ -309,63 +309,39 @@ class TestPdfExtraction:
 # ---------------------------------------------------------------------------
 
 class TestExcelOutput:
-    """opt-in 時は月額水道光熱費が設定され、opt-out 時は None のまま。"""
+    """「表示」と「GPI算入」の分離を検証する。
 
-    def _make_unit(self, water: float | None = 37_295) -> RentRollUnit:
+    設計:
+      - from_rent_roll_unit: 抽出値を常に DirectCapRow に格納（opt-in/out 不問）
+      - write_direct_cap_workbook(oi_config=...): OER の E7-E9 を条件分岐
+        - opt-out: =0 ＋「（算入対象外）」ラベル → 読み取りレントロール列は表示維持
+        - opt-in: cross-sheet ref → GPI に算入
+    """
+
+    def _make_unit_with_water(self, water: float | None = 37_295) -> RentRollUnit:
         return RentRollUnit(
-            区画="101",
-            用途="住宅",
-            賃借人=None,
-            専有面積_m2=30.0,
-            月額賃料_円=601_000,
-            月額共益費_円=46_000,
-            稼働状況="入居",
-            契約満了日=None,
+            区画="101", 用途="住宅", 賃借人=None, 専有面積_m2=30.0,
+            月額賃料_円=601_000, 月額共益費_円=46_000,
+            稼働状況="入居", 契約満了日=None,
             月額水道代_円=water,
         )
 
-    def test_optin_populates_water(self):
-        """include_in_gpi=True かつ water in columns で 月額水道光熱費 が設定される。"""
-        unit = self._make_unit(water=37_295)
-        oi = OptionalIncomeConfig(include_in_gpi=True, columns=["water"])
-        row = DirectCapRow.from_rent_roll_unit(unit, oi)
+    # --- from_rent_roll_unit: 常に抽出値を格納 --------------------------------
+
+    def test_from_rent_roll_always_shows_extracted_water(self):
+        """水道代がある unit では、opt-in/out 関係なく月額水道光熱費 = 抽出値。"""
+        unit = self._make_unit_with_water(water=37_295)
+        row = DirectCapRow.from_rent_roll_unit(unit)
         assert row.月額水道光熱費 == 37_295
 
-    def test_optout_water_is_none(self):
-        """include_in_gpi=False では月額水道光熱費が None のまま（ユーザー手入力用）。"""
-        unit = self._make_unit(water=37_295)
-        oi = OptionalIncomeConfig(include_in_gpi=False, columns=["water"])
-        row = DirectCapRow.from_rent_roll_unit(unit, oi)
-        assert row.月額水道光熱費 is None
-
-    def test_no_config_water_is_none(self):
-        """oi_config 未指定（None）でも月額水道光熱費が None（後方互換）。"""
-        unit = self._make_unit(water=37_295)
+    def test_from_rent_roll_no_water_in_unit_stays_none(self):
+        """水道代が抽出されていない unit では月額水道光熱費 = None のまま。"""
+        unit = self._make_unit_with_water(water=None)
         row = DirectCapRow.from_rent_roll_unit(unit)
         assert row.月額水道光熱費 is None
 
-    def test_water_not_in_columns_is_none(self):
-        """include_in_gpi=True でも water が columns にない場合は None。"""
-        unit = self._make_unit(water=37_295)
-        oi = OptionalIncomeConfig(include_in_gpi=True, columns=["parking"])
-        row = DirectCapRow.from_rent_roll_unit(unit, oi)
-        assert row.月額水道光熱費 is None
-
-    def test_optin_parking_populated(self):
-        """parking opt-in では月額駐車場が設定される。"""
-        unit = RentRollUnit(
-            区画="102", 用途="住宅", 賃借人=None, 専有面積_m2=30.0,
-            月額賃料_円=100_000, 月額共益費_円=10_000,
-            稼働状況="入居", 契約満了日=None,
-            月額駐車場収入_円=20_000,
-        )
-        oi = OptionalIncomeConfig(include_in_gpi=True, columns=["parking"])
-        row = DirectCapRow.from_rent_roll_unit(unit, oi)
-        assert row.月額駐車場 == 20_000
-        assert row.月額水道光熱費 is None  # water は columns にない
-
-    def test_multiple_optin_columns(self):
-        """複数の optional income が同時に設定される。"""
+    def test_from_rent_roll_all_optional_income_always_populated(self):
+        """水道代・駐車場・その他収入が全て抽出値で格納される。"""
         unit = RentRollUnit(
             区画="103", 用途="住宅", 賃借人=None, 専有面積_m2=30.0,
             月額賃料_円=100_000, 月額共益費_円=10_000,
@@ -374,11 +350,100 @@ class TestExcelOutput:
             月額駐車場収入_円=20_000,
             月額その他収入_円=3_000,
         )
-        oi = OptionalIncomeConfig(include_in_gpi=True, columns=["water", "parking", "other_income"])
-        row = DirectCapRow.from_rent_roll_unit(unit, oi)
+        row = DirectCapRow.from_rent_roll_unit(unit)
         assert row.月額水道光熱費 == 5_000
         assert row.月額駐車場 == 20_000
         assert row.月額その他収入 == 3_000
+
+    def test_from_rent_roll_parking_always_set(self):
+        """駐車場収入も常に格納される。"""
+        unit = RentRollUnit(
+            区画="102", 用途="住宅", 賃借人=None, 専有面積_m2=30.0,
+            月額賃料_円=100_000, 月額共益費_円=10_000,
+            稼働状況="入居", 契約満了日=None,
+            月額駐車場収入_円=20_000,
+        )
+        row = DirectCapRow.from_rent_roll_unit(unit)
+        assert row.月額駐車場 == 20_000
+        assert row.月額水道光熱費 is None  # 水道代は抽出されていない
+
+    # --- workbook レベル: OER formula 制御 ------------------------------------
+
+    def _build_workbook(self, tmp_path, water: float | None, oi_config):
+        """水道代を持つ1区画の workbook を生成してパスを返す。"""
+        from pathlib import Path
+        from revenue_kun.excel_output import write_direct_cap_workbook, DirectCapRow
+        unit = self._make_unit_with_water(water=water)
+        rows = [DirectCapRow.from_rent_roll_unit(unit)]
+        p = Path(tmp_path) / "test.xlsx"
+        write_direct_cap_workbook(p, rows, oi_config=oi_config)
+        return p
+
+    def _load_wb(self, path):
+        from openpyxl import load_workbook
+        return load_workbook(path)
+
+    def test_workbook_optout_oer_water_is_zero(self, tmp_path):
+        """opt-out 時、OER E7（水道代収入）は =0 で GPI に算入しない。"""
+        from revenue_kun.excel_output import SHEET_OER
+        oi = OptionalIncomeConfig(include_in_gpi=False)
+        p = self._build_workbook(tmp_path, water=37_295, oi_config=oi)
+        oer_ws = self._load_wb(p)[SHEET_OER]
+        assert oer_ws["E7"].value == "=0", (
+            f"opt-out 時 E7 は =0 であるべき, got: {oer_ws['E7'].value!r}"
+        )
+
+    def test_workbook_optout_rent_roll_shows_water(self, tmp_path):
+        """opt-out 時でも 読み取りレントロール には水道代収入が表示される。"""
+        from revenue_kun.excel_output import SHEET_RENT_ROLL, _C_UTIL
+        oi = OptionalIncomeConfig(include_in_gpi=False)
+        p = self._build_workbook(tmp_path, water=37_295, oi_config=oi)
+        rr_ws = self._load_wb(p)[SHEET_RENT_ROLL]
+        # データ行 (row 2) に水道代収入 = 37295 が表示されている
+        assert rr_ws.cell(2, _C_UTIL).value == 37_295, (
+            "opt-out 時でも 読み取りレントロール 水道代収入列に値が表示されるべき"
+        )
+
+    def test_workbook_optout_label_contains_excluded(self, tmp_path):
+        """opt-out 時の OER 付帯収入行ラベルに「算入対象外」が含まれる。"""
+        from revenue_kun.excel_output import SHEET_OER
+        oi = OptionalIncomeConfig(include_in_gpi=False)
+        p = self._build_workbook(tmp_path, water=37_295, oi_config=oi)
+        oer_ws = self._load_wb(p)[SHEET_OER]
+        label = oer_ws.cell(7, 4).value or ""
+        assert "算入対象外" in label, (
+            f"opt-out 時 D7 に '算入対象外' が含まれるべき, got: {label!r}"
+        )
+
+    def test_workbook_optin_water_oer_references_rent_roll(self, tmp_path):
+        """opt-in 時、OER E7 は 読み取りレントロール annual row を参照する。"""
+        from revenue_kun.excel_output import SHEET_OER, SHEET_RENT_ROLL
+        oi = OptionalIncomeConfig(include_in_gpi=True, columns=["water"])
+        p = self._build_workbook(tmp_path, water=37_295, oi_config=oi)
+        oer_ws = self._load_wb(p)[SHEET_OER]
+        formula = oer_ws["E7"].value or ""
+        assert SHEET_RENT_ROLL in formula, (
+            f"opt-in 時 E7 は 読み取りレントロール を参照するべき, got: {formula!r}"
+        )
+        assert formula != "=0", "opt-in 時 E7 が =0 になっている"
+
+    def test_workbook_optin_parking_not_in_columns_is_zero(self, tmp_path):
+        """water のみ opt-in 時、E8 (駐車場収入) は =0 のまま。"""
+        from revenue_kun.excel_output import SHEET_OER
+        oi = OptionalIncomeConfig(include_in_gpi=True, columns=["water"])
+        p = self._build_workbook(tmp_path, water=37_295, oi_config=oi)
+        oer_ws = self._load_wb(p)[SHEET_OER]
+        assert oer_ws["E8"].value == "=0", (
+            f"water のみ opt-in 時 E8 は =0 であるべき, got: {oer_ws['E8'].value!r}"
+        )
+
+    def test_workbook_optout_gpi_formula_sums_e5_to_e9(self, tmp_path):
+        """GPI (E10) は常に =SUM(E5:E9)。opt-out 時は E7-E9=0 なので GPI = rent+cam。"""
+        from revenue_kun.excel_output import SHEET_OER
+        oi = OptionalIncomeConfig(include_in_gpi=False)
+        p = self._build_workbook(tmp_path, water=37_295, oi_config=oi)
+        oer_ws = self._load_wb(p)[SHEET_OER]
+        assert oer_ws["E10"].value == "=SUM(E5:E9)"
 
 
 # ---------------------------------------------------------------------------

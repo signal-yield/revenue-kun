@@ -8,6 +8,12 @@ Produces a three-sheet .xlsx workbook:
   Sheet 2: 直接還元法‗費用詳細版 -- expense detail input (user-editable; SUM at B10)
   Sheet 3: 読み取りレントロール    -- extracted rent roll with monthly+annual totals
 
+「表示」と「GPI算入」の分離:
+  読み取りレントロール: 抽出された付帯収入（水道代収入/駐車場収入/その他収入）を
+    常に表示する。opt-in/opt-out に関わらず抽出値を記録する。
+  直接還元法_OER: optional_income.include_in_gpi=True かつ columns に含まれる
+    収入のみ E7-E9 を cross-sheet ref にする。opt-out 時は =0（算入対象外）。
+
 IMPORTANT: OER cells E5:E9 reference the annual total row in
 読み取りレントロール directly.  They do NOT multiply by 12 because
 読み取りレントロール already provides annual totals (monthly_total * 12).
@@ -55,14 +61,17 @@ _C_OTHER = 7    # 月額その他収入
 _C_NOTES = 8    # 備考
 _INCOME_COLS = (_C_RENT, _C_CAM, _C_UTIL, _C_PARKING, _C_OTHER)
 
-# OER income rows: (oer_row, label, income_col_in_rent_roll)
-# E5:E9 in OER link to the annual total row in 読み取りレントロール.
-_OER_INCOME_ROWS = [
-    (5, "貸室賃料収入",   _C_RENT),
-    (6, "共益費収入",     _C_CAM),
-    (7, "水道光熱費収入", _C_UTIL),
-    (8, "駐車場収入",     _C_PARKING),
-    (9, "その他収入",     _C_OTHER),
+# OER income rows: (oer_row, label, income_col_in_rent_roll, optional_key | None)
+# optional_key が None の行（賃料/共益費）は常に cross-sheet ref。
+# optional_key が文字列の行（付帯収入）は opt-in 時のみ cross-sheet ref、
+# opt-out 時は =0 & ラベルに「（算入対象外）」を付ける。
+# 「水道代収入」は費用サイドの「水道光熱費」と表記上も混同しない。
+_OER_INCOME_ROWS: list[tuple[int, str, int, str | None]] = [
+    (5, "貸室賃料収入", _C_RENT,    None),
+    (6, "共益費収入",   _C_CAM,     None),
+    (7, "水道代収入",   _C_UTIL,    "water"),
+    (8, "駐車場収入",   _C_PARKING, "parking"),
+    (9, "その他収入",   _C_OTHER,   "other_income"),
 ]
 
 # Styles
@@ -99,34 +108,25 @@ class DirectCapRow:
     備考: str | None = None
 
     @classmethod
-    def from_rent_roll_unit(
-        cls,
-        unit: RentRollUnit,
-        oi_config: OptionalIncomeConfig | None = None,
-    ) -> DirectCapRow:
+    def from_rent_roll_unit(cls, unit: RentRollUnit) -> DirectCapRow:
         """Convert a RentRollUnit to a DirectCapRow.
 
-        oi_config controls which optional income columns are populated.
-        When include_in_gpi=False (default) or oi_config is None, optional
-        income columns are left as None so the user can fill them in Excel.
+        Optional income fields (水道代収入/駐車場収入/その他収入) are always
+        populated from the unit's extracted values so they appear in
+        読み取りレントロール regardless of opt-in/opt-out setting.
+        GPI inclusion is controlled by OER sheet formulas (=0 when opt-out,
+        cross-sheet ref when opt-in) — see write_direct_cap_workbook.
         Vacant units receive the standard 備考 note automatically.
         """
         note = _VACANT_NOTE if not unit.is_occupied else None
-        oi = oi_config or OptionalIncomeConfig()
-
-        def _oi(key: str) -> float | None:
-            if not oi.include_in_gpi or key not in oi.columns:
-                return None
-            return unit.get_optional_income(key)
-
         return cls(
             区画=unit.区画,
             ステータス=unit.稼働状況,
             月額賃料=unit.月額賃料_円,
             月額共益費=unit.月額共益費_円,
-            月額水道光熱費=_oi("water"),
-            月額駐車場=_oi("parking"),
-            月額その他収入=_oi("other_income"),
+            月額水道光熱費=unit.月額水道代_円,
+            月額駐車場=unit.月額駐車場収入_円,
+            月額その他収入=unit.月額その他収入_円,
             備考=note,
         )
 
@@ -138,16 +138,22 @@ class DirectCapRow:
 def write_direct_cap_workbook(
     path: str | Path,
     rows: list[DirectCapRow],
+    oi_config: OptionalIncomeConfig | None = None,
 ) -> None:
     """Write the three-sheet direct-capitalization workbook to *path*.
 
     Sheet order: 直接還元法_OER / 直接還元法‗費用詳細版 / 読み取りレントロール
 
-    OER cells E5:E9 contain cross-sheet references to the annual total row in
-    読み取りレントロール.  They do NOT multiply by 12.
+    読み取りレントロール: 抽出した付帯収入（水道代収入/駐車場収入/その他収入）を
+    opt-in/opt-out に関わらず常に表示する。
+
+    直接還元法_OER: oi_config で指定された付帯収入のみ cross-sheet ref で GPI に算入。
+    opt-out の付帯収入行は =0 を書き込み「（算入対象外）」と表示する。
+
     OER cells E13:E17 are empty user-input cells (border + light-yellow fill).
     OER cells E20:E24 compute EGI → expenses → NOI → 収益試算値 automatically.
     """
+    _oi = oi_config or OptionalIncomeConfig()
     wb = Workbook()
 
     # Build the rent roll sheet first to know the annual_total_row index.
@@ -157,7 +163,7 @@ def write_direct_cap_workbook(
 
     # Insert OER as sheet 0 (leftmost tab).
     oer_ws = wb.create_sheet(SHEET_OER, 0)
-    _build_oer_sheet(oer_ws, annual_total_row)
+    _build_oer_sheet(oer_ws, annual_total_row, _oi)
 
     # Insert expense detail as sheet 1 (between OER and rent roll).
     exp_ws = wb.create_sheet(SHEET_EXPENSE, 1)
@@ -180,7 +186,7 @@ def _build_rent_roll_sheet(ws, rows: list[DirectCapRow]) -> int:
     """Populate 読み取りレントロール.  Returns the annual_total_row (1-based)."""
     headers = [
         "部屋番号", "ステータス",
-        "月額賃料", "月額共益費", "月額水道光熱費", "月額駐車場", "月額その他収入",
+        "月額賃料", "月額共益費", "水道代収入（月額）", "駐車場収入（月額）", "その他収入（月額）",
         "備考",
     ]
     ws.append(headers)
@@ -239,11 +245,15 @@ def _build_rent_roll_sheet(ws, rows: list[DirectCapRow]) -> int:
     return annual_row
 
 
-def _build_oer_sheet(ws, annual_total_row: int) -> None:
+def _build_oer_sheet(
+    ws, annual_total_row: int, oi_config: OptionalIncomeConfig | None = None
+) -> None:
     """Populate 直接還元法_OER as a self-computing live model.
 
-    Income block (E5:E9): cross-sheet refs to 読み取りレントロール annual row.
-    No *12 — annual totals are already in 読み取りレントロール.
+    Income block (E5:E9):
+      E5/E6 (貸室賃料/共益費): always cross-sheet refs to 読み取りレントロール annual row.
+      E7-E9 (付帯収入): cross-sheet ref when opt-in, =0 when opt-out.
+      Opt-out rows show label + "（算入対象外）" so the user can see what was excluded.
 
     Input cells (E13:E17): empty with border + light-yellow fill.
     User enters: 空室損失率 / 貸倒損失率 / 経費率 / 資本的支出 / 還元利回り.
@@ -258,6 +268,7 @@ def _build_oer_sheet(ws, annual_total_row: int) -> None:
     Reference rows (E27:E28): 費用詳細版 total for expense-ratio cross-check only.
     These are NOT connected to NOI to avoid double-counting.
     """
+    oi = oi_config or OptionalIncomeConfig()
     ann = annual_total_row
 
     # Title and disclaimer
@@ -272,11 +283,21 @@ def _build_oer_sheet(ws, annual_total_row: int) -> None:
     ws["D4"].font = _BOLD
     ws["E4"].font = _BOLD
 
-    # Income rows E5:E9 — cross-sheet refs, NO *12
-    for row_num, label, income_col in _OER_INCOME_ROWS:
+    # Income rows E5:E9
+    # - optional_key=None (賃料/共益費): always cross-sheet ref
+    # - optional_key=str (付帯収入): cross-sheet ref when opt-in, =0 when opt-out
+    for row_num, label, income_col, optional_key in _OER_INCOME_ROWS:
         col_letter = get_column_letter(income_col)
-        ws.cell(row_num, 4, label)
-        formula = f"='{SHEET_RENT_ROLL}'!{col_letter}{ann}"
+        is_optin = (
+            optional_key is None
+            or (oi.include_in_gpi and optional_key in oi.columns)
+        )
+        display_label = label if is_optin else f"{label}（算入対象外）"
+        ws.cell(row_num, 4, display_label)
+        if is_optin:
+            formula = f"='{SHEET_RENT_ROLL}'!{col_letter}{ann}"
+        else:
+            formula = "=0"
         cell = ws.cell(row_num, 5, formula)
         cell.number_format = _MONEY_FORMAT
 
