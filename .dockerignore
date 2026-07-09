@@ -1,0 +1,45 @@
+# Version control
+.git/
+.github/
+
+# Claude Code / agent tooling
+.claude/
+.agents/
+
+# Python bytecode and caches
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Virtual environments
+venv/
+.venv/
+
+# Generated output (users bind-mount ./output at runtime)
+output/
+output_*/
+eval/
+eval_output/
+output_base/
+output_simple/
+output_missing/
+output_different/
+
+# Private / uncommitted samples (never committed, but guard anyway)
+samples/private/
+tmp_extract/
+
+# Skill packaging artifacts
+skill/out/
+build_skill.py
+skills-lock.json
+skill/
+
+# Documentation and planning files (not needed in image)
+docs/
+*.md
+pr_body.md
+
+# Scripts not needed at CLI runtime
+scripts/

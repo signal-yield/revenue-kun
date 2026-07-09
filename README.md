@@ -479,6 +479,107 @@ python -m pytest -q
 
 ---
 
+## Docker で実行
+
+Python 環境を構築せずに、Docker で再現可能な CLI 実行環境を使えます。
+
+> OCR・スキャン PDF・スマホ撮影対応は Docker イメージに含まれません（今後の検討対象）。
+> qualifying real-world PDF 評価は未完了（Issue #21 open）。実務検証済みとは表記しません。
+
+### ビルド
+
+```bash
+docker build -t revenue-kun .
+```
+
+### ヘルプ表示（デフォルト）
+
+```bash
+docker run --rm revenue-kun
+```
+
+### dry-run（抽出診断のみ・成果物生成なし）
+
+```bash
+# bash / macOS / Linux
+docker run --rm \
+  -v "$(pwd)/output:/app/output" \
+  revenue-kun \
+  python src/main.py \
+    --assumptions assumptions.sample.yaml \
+    --rent-roll-pdf data/sample_rentroll_simple.pdf \
+    --output /app/output \
+    --dry-run
+```
+
+```powershell
+# PowerShell (Windows)
+docker run --rm `
+  -v "${PWD}/output:/app/output" `
+  revenue-kun `
+  python src/main.py `
+    --assumptions assumptions.sample.yaml `
+    --rent-roll-pdf data/sample_rentroll_simple.pdf `
+    --output /app/output `
+    --dry-run
+```
+
+### 通常実行（Excel ワークブック出力あり）
+
+```bash
+# bash / macOS / Linux
+docker run --rm \
+  -v "$(pwd)/output:/app/output" \
+  revenue-kun \
+  python src/main.py \
+    --assumptions assumptions.sample.yaml \
+    --rent-roll-pdf data/sample_rentroll_simple.pdf \
+    --output /app/output \
+    --excel-output /app/output/direct_cap.xlsx
+```
+
+```powershell
+# PowerShell (Windows)
+docker run --rm `
+  -v "${PWD}/output:/app/output" `
+  revenue-kun `
+  python src/main.py `
+    --assumptions assumptions.sample.yaml `
+    --rent-roll-pdf data/sample_rentroll_simple.pdf `
+    --output /app/output `
+    --excel-output /app/output/direct_cap.xlsx
+```
+
+生成ファイルはホスト側の `./output/` に書き出されます。
+
+### 自分の PDF・assumptions を使う
+
+コンテナ内に持ち込みたいファイルが入ったディレクトリを別途マウントします。
+
+```bash
+# bash / macOS / Linux
+docker run --rm \
+  -v "$(pwd)/output:/app/output" \
+  -v "/path/to/your/files:/app/my_data" \
+  revenue-kun \
+  python src/main.py \
+    --assumptions /app/my_data/my_assumptions.yaml \
+    --rent-roll-pdf /app/my_data/my_rentroll.pdf \
+    --output /app/output \
+    --dry-run
+```
+
+> **注意**: テキストベースの PDF（pdfplumber で抽出可能なもの）のみ対応。
+> スキャン PDF・画像 PDF には対応していません（OCR は今後の検討対象）。
+
+### テストをコンテナ内で実行
+
+```bash
+docker run --rm revenue-kun python -m pytest -q
+```
+
+---
+
 ## 出荷前チェックリスト（PowerShell）
 
 GitHub公開・PR前に、以下が順に成功することを確認します。
