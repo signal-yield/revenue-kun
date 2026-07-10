@@ -3,10 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>revenue-kun — レントロールPDFをアップロードするだけで、直接還元法の収益試算Excelを。</title>
-  <meta name="description" content="revenue-kun: レントロール（CSV・text-based PDF）から直接還元法 Excel ワークブックを生成する OSS Skill。claude.ai / Cowork 上で動作。収益試算値の算出と欠損管理をサポートします。鑑定評価ではありません。" />
-  <meta property="og:title" content="revenue-kun — 直接還元法 収益試算 Excel 出力 Skill" />
-  <meta property="og:description" content="レントロールPDFをアップロードするだけで、直接還元法の収益試算Excelを。OSS — Apache 2.0" />
+  <title>revenue-kun — レントロールPDF/CSVから直接還元法Excelを生成するDocker対応OSS CLI</title>
+  <meta
+    name="description"
+    content="revenue-kunは、レントロールCSVまたはテキスト抽出可能なPDFから、直接還元法の収益試算Excelワークブックを生成するDocker対応OSS CLIです。"
+  />
+  <meta
+    property="og:title"
+    content="revenue-kun v0.4.2 — Docker対応の不動産収益試算OSS CLI"
+  />
+  <meta
+    property="og:description"
+    content="レントロールPDF/CSVから、直接還元法の収益試算Excelワークブックを生成。optional incomeのGPI opt-inにも対応。"
+  />
   <meta property="og:type" content="website" />
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -28,16 +37,18 @@
     <div class="hero-badge">
       <span class="badge badge-oss">OSS</span>
       <span class="badge badge-license">Apache 2.0</span>
-      <span class="badge badge-version">v0.4.1</span>
+      <span class="badge badge-version">v0.4.2</span>
     </div>
     <h1 class="hero-headline">
-      レントロールPDFをアップロードするだけで、<br>
+      レントロールPDF/CSVから、<br>
       直接還元法の収益試算Excelを。
     </h1>
     <p class="hero-sub">
-      claude.ai / Cowork 上で動くオープンソース Skill。レントロール（CSV・text-based PDF）を読み取り、<br>
-      収入側を自動集計した収益試算ワークブック（OER／費用詳細／レントロールの3シート）を出力します。
-      <span class="hero-sub-en">Open-source direct-capitalization Skill — upload a rent roll, get a structured Excel workbook.</span>
+      テキスト抽出可能なPDFまたはCSVを入力し、<br>
+      収入情報を整理した3シート構成のExcelワークブックを生成するDocker対応OSS CLIです。
+      <span class="hero-sub-en">
+        Docker-ready open-source CLI for generating a direct-capitalization Excel workbook from a rent roll.
+      </span>
     </p>
     <div class="warn-badge">
       <span class="warn-icon">⚠</span>
@@ -108,6 +119,13 @@
           <td><code>--excel-output</code> で3シート .xlsx を生成</td>
         </tr>
         <tr>
+          <td>付帯収入（optional income）</td>
+          <td>
+            水道代収入・駐車場収入・その他収入を読み取りレントロールに表示。
+            GPIには明示的に選択した項目のみ算入します（デフォルトはすべて算入対象外）。
+          </td>
+        </tr>
+        <tr>
           <td>欠損の扱い</td>
           <td>自動補完しない。欠損項目は <code>missing_info.md</code> に明示記録</td>
         </tr>
@@ -145,6 +163,11 @@
             年額収入セル（E2/E3/E5/E6/E7）が <code>読み取りレントロール</code> の年計行を自動参照。
             空室損失率・還元利回り等はユーザーが手入力。
           </p>
+          <p class="sheet-desc">
+            付帯収入は読み取りレントロールには表示されますが、
+            デフォルトではGPIに算入されません。
+            設定で明示的にopt-inした項目だけがOERシートに連携されます。
+          </p>
           <table class="mini-sheet">
             <thead>
               <tr><th>D列（項目）</th><th>E列（値）</th></tr>
@@ -152,10 +175,10 @@
             <tbody>
               <tr><td>貸室賃料収入（年額）</td><td>=読み取りレントロール!…（自動）</td></tr>
               <tr><td>共益費収入（年額）</td><td>=読み取りレントロール!…（自動）</td></tr>
-              <tr><td>水道光熱費収入（年額）</td><td>=読み取りレントロール!…（自動）</td></tr>
-              <tr><td>駐車場収入（年額）</td><td>=読み取りレントロール!…（自動）</td></tr>
-              <tr><td>その他収入（年額）</td><td>=読み取りレントロール!…（自動）</td></tr>
-              <tr><td>GPI 合計</td><td>=SUM(E5:E9)（自動）</td></tr>
+              <tr><td>水道代収入（算入対象外）</td><td>=0（デフォルト）</td></tr>
+              <tr><td>駐車場収入（算入対象外）</td><td>=0（デフォルト）</td></tr>
+              <tr><td>その他収入（算入対象外）</td><td>=0（デフォルト）</td></tr>
+              <tr><td>総収入（年額）</td><td>=SUM(E5:E9)（自動）</td></tr>
               <tr class="user-row"><td>空室損失率</td><td>← 手入力</td></tr>
               <tr class="user-row"><td>貸倒損失率</td><td>← 手入力</td></tr>
               <tr class="user-row"><td>経費率（運営費用率）</td><td>← 手入力</td></tr>
@@ -271,33 +294,44 @@
   </div>
 </section>
 
-<!-- Section 5b: claude.ai / Cowork Skill -->
+<!-- Section 5b: 利用方法 -->
 <section class="section section-claude" id="usage">
   <div class="container">
-    <h2>claude.ai / Cowork で使う</h2>
+    <h2>利用方法</h2>
     <p class="section-sub">
-      revenue-kun は claude.ai / Cowork で動く OSS Skill（<code>skill/</code>）として実装しています。clone もターミナルも不要です。
+      v0.4.2の正式な利用形態は、ローカルCLIまたはDockerです。
+      claude.ai / Cowork向けSkillもリポジトリ内に収録していますが、
+      Skillマーケットプレイスでは公開していません。
     </p>
     <div class="claude-cards">
 
       <div class="claude-card">
-        <div class="claude-card-icon">☁️</div>
-        <h3>4ステップで収益試算Excel</h3>
-        <ol style="font-size:0.9em;padding-left:1.2em;margin-top:0.5rem;line-height:1.8;">
-          <li>Skill をリポジトリから導入（claude.ai / Cowork）</li>
-          <li>レントロール PDF をアップロード</li>
-          <li>dry-run で抽出内容（区画・月計・年計・欠損）を確認</li>
-          <li>収益試算 Excel をダウンロード</li>
-        </ol>
-        <p style="font-size:0.85em;color:#555;margin-top:0.75rem;">
-          空室損失率・経費率・還元利回り等は、出力された Excel にユーザーが手入力します。<strong>Claude は値を提案しません。</strong>
+        <div class="claude-card-icon">🐳</div>
+        <h3>Docker対応CLI</h3>
+        <p>
+          Python環境を個別に構築せず、Dockerで再現可能なCLI実行環境を利用できます。
+          CSVまたはテキスト抽出可能なPDFから、直接還元法Excelワークブックを生成します。
+          詳細な実行手順はREADMEを参照してください。
         </p>
       </div>
 
       <div class="claude-card">
         <div class="claude-card-icon">⌨️</div>
-        <h3>開発者向け：ローカル CLI</h3>
-        <p>ローカルでは CLI（<code>src/main.py</code>）としても利用できます。手順は README を参照してください。</p>
+        <h3>ローカルPython CLI</h3>
+        <p>
+          Python環境ではCLI（<code>src/main.py</code>）として実行できます。
+          CSVまたはテキスト抽出可能なPDFを入力し、Excelワークブックを生成します。
+          手順はREADMEを参照してください。
+        </p>
+      </div>
+
+      <div class="claude-card">
+        <div class="claude-card-icon">☁️</div>
+        <h3>claude.ai / Cowork Skill（補助的な利用形態）</h3>
+        <p style="font-size:0.85em;color:#555;">
+          リポジトリ内に Skill 実装（<code>skill/</code>）を収録しています。<strong>Skillマーケットプレイスでは未公開</strong>です。
+          空室損失率・経費率・還元利回り等は、出力された Excel にユーザーが手入力します。Claude は値を提案しません。
+        </p>
       </div>
 
     </div>
@@ -305,6 +339,9 @@
       ⚠ 合成サンプルPDFで動作確認済み。qualifying real-world PDF の評価は未完了（Issue #21 open）。
       実物件PDFはサンプル検証の範囲外であり、実務検証済みとは表記しません。
       Claude Skill マーケットプレイスへの公開は未定で、リリース済みとは表記しません。
+    </p>
+    <p class="section-note">
+      v0.4.2のDocker build、dry-run、テスト、Excel出力の確認結果はRelease Notesを参照してください。
     </p>
   </div>
 </section>
@@ -390,7 +427,10 @@
         </tr>
         <tr>
           <td>GUI / 専用Webアプリ</td>
-          <td>未実装。利用形態は claude.ai / Cowork Skill とローカル CLI（v0.4.1）。</td>
+          <td>
+            未実装です。Web UI・ホスティング型SaaS・スマホ撮影対応は今後の検討対象です。
+            現在の正式な利用形態はローカルCLIまたはDockerです。
+          </td>
         </tr>
       </tbody>
     </table>
@@ -406,6 +446,18 @@
         <h3>GitHub リポジトリ</h3>
         <p>ソースコード・README・ライセンス（Apache 2.0）を確認できます。</p>
         <a href="https://github.com/signal-yield/revenue-kun" class="btn btn-primary">リポジトリを見る</a>
+      </div>
+      <div class="cta-card">
+        <h3>v0.4.2 リリースノート</h3>
+        <p>
+          Docker対応と、optional incomeの表示・GPI算入分離について確認できます。
+        </p>
+        <a
+          href="https://github.com/signal-yield/revenue-kun/releases/tag/v0.4.2"
+          class="btn btn-secondary"
+        >
+          Release v0.4.2 を見る
+        </a>
       </div>
       <div class="cta-card">
         <h3>合成サンプルを試す</h3>
@@ -460,7 +512,7 @@
 <footer class="site-footer">
   <div class="container">
     <p>
-      revenue-kun v0.4.1 &nbsp;·&nbsp; Apache 2.0 License &nbsp;·&nbsp;
+      revenue-kun v0.4.2 &nbsp;·&nbsp; Apache 2.0 License &nbsp;·&nbsp;
       <a href="https://github.com/signal-yield/revenue-kun">GitHub</a>
     </p>
     <p class="footer-issues">
