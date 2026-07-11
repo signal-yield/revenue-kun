@@ -122,5 +122,5 @@ xlsx には OER 自己計算モデルが入る：
 
 ---
 
-*revenue-kun v0.4.1 — Package Skill*
+*revenue-kun v0.5.1 — Package Skill*
 *#19 remains open  #21 remains open  Issue #22 is completed  #48 remains open*
