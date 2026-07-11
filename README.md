@@ -119,8 +119,27 @@ python src/main.py --assumptions assumptions.sample.yaml --rent-roll-pdf data/sa
 
 ## Screenshots
 
-Screenshots will be added using synthetic sample data only.
-No real rent rolls, tenant names, or client data will be used.
+All screenshots below use synthetic sample data only.
+No real rent rolls, tenant names, client data, or property-identifying information are shown.
+The synthetic sample used to produce them is [`examples/synthetic_rent_roll.pdf`](examples/synthetic_rent_roll.pdf).
+
+> **Note**: these images are data-accurate renders of the actual Web UI output and generated workbook values, produced from a real `/api/preview` / `/api/generate` run against the synthetic sample above (not hand-drawn mockups with invented numbers). A CLI screenshot will be added later.
+
+### Local Web UI preview
+
+<img src="docs/assets/screenshots/webui-preview.png" alt="Local Web UI preview with synthetic rent roll data" width="800">
+
+### Optional income controls
+
+<img src="docs/assets/screenshots/webui-optional-income.png" alt="Optional income controls showing water, parking, and other income using synthetic data" width="800">
+
+### Workbook — 直接還元法_OER
+
+<img src="docs/assets/screenshots/workbook-oer.png" alt="Direct-capitalization OER sheet generated from synthetic data" width="800">
+
+### Workbook — 読み取りレントロール
+
+<img src="docs/assets/screenshots/workbook-rent-roll.png" alt="Read rent-roll sheet generated from synthetic data" width="800">
 
 ## Roadmap
 
