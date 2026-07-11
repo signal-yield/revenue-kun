@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## [v0.5.1] — 2026-07-11
+
+- Align internal version metadata (`src/revenue_kun/__init__.py`, `VERSION`) with the published release line.
+- Update README and GitHub Pages to identify v0.5.1 as the current release.
+- Update Docker Web UI verification status based on successful Docker Desktop build/run smoke tests.
+- No functional changes to extraction, calculation, CLI, or Local Web UI behavior.
+
+> Note: this entry covers only the v0.5.1 version/documentation alignment patch. Detailed changelog entries for v0.4.0 through v0.5.0 are not yet backfilled here and are tracked as separate follow-up work.
+
 ## [v0.3.0] — 2026-06-13
 
 ### 基本方針（変更なし）

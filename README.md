@@ -1,4 +1,4 @@
-# revenue-kun（収益還元クン） v0.4.2
+# revenue-kun（収益還元クン） v0.5.1
 
 **Local-first OSS tool for real estate income-estimation workflows.**
 Rent roll CSV / text-based PDF → direct-capitalization Excel workbook.
@@ -8,6 +8,18 @@ Available as a **CLI** (Docker-ready) and a **local Web UI** — not a hosted Sa
 NOI（運営純収益）を算出し、**収益試算値**と感応度分析を出力します。
 オプションで直接還元法 Excel ワークブック（`direct_cap.xlsx`）を生成できます。
 **CLI**（Docker対応）に加えて、ブラウザから使える**ローカルWeb UI**もあります（ホスティング型SaaSではありません）。
+
+> **v0.5.1 — バージョン・ドキュメント整合パッチ（現行版）**  
+> v0.5.0（Local Web UI MVP）に対する、機能変更を伴わない version / documentation alignment patch です。  
+> 内部 `__version__` と `VERSION` ファイルを公開版（GitHub Release / GitHub Pages LP）と整合させ、README の Docker Web UI 検証状況の記載を実機検証済みの内容に更新しました。  
+> Local Web UI の主要機能（ブラウザからのアップロード・プレビュー・`direct_cap.xlsx` 生成/ダウンロード）は v0.5.0 で追加されたものであり、v0.5.1 での新規追加ではありません。  
+> CLI は引き続き利用可能です。抽出ロジック・計算ロジック・Web UI の挙動・optional income の仕様に変更はありません。  
+> qualifying real-world PDF 評価は未完了（Issue #21 open）。実務検証済みとは表記しません。
+
+> **v0.5.0 — Local Web UI MVP**  
+> ブラウザから使えるローカルWeb UI（アップロード・プレビュー・`direct_cap.xlsx` 生成/ダウンロード）を追加。  
+> `Dockerfile.web` による Web UI 用 Docker イメージを追加。  
+> qualifying real-world PDF 評価は未完了（Issue #21 open）。実務検証済みとは表記しません。
 
 > **v0.4.2 — Docker 対応・optional income 対応**  
 > Docker build / run / pytest / Excel出力を実機検証済み。  
@@ -70,7 +82,9 @@ docker run --rm -p 127.0.0.1:8000:8000 revenue-kun-web
 
 Then open `http://127.0.0.1:8000/` in your browser. The host side is bound to `127.0.0.1` (loopback) only — this is **not** exposed to the public internet, and this is **not** a hosted SaaS. Building/running this image requires a working Docker daemon.
 
-> **Development note**: in one prior development sandbox, no Docker daemon was available, so `docker build -f Dockerfile.web` / `docker run` could not be executed there. `Dockerfile.web` was reviewed manually and the underlying `uvicorn webui.app:app` command it runs was verified directly (see [ローカルWeb UI（Step 3, ベータ）](#ローカルweb-ui-step-3-ベータ) below). Please open an Issue if you run into a build/run problem in your own environment.
+> **Verified (Docker Desktop environment)**: `Dockerfile.web` build (both regular and `--no-cache`), loopback-bound `docker run`, `GET /healthz`, `POST /api/preview`, `POST /api/generate`, `direct_cap.xlsx` generation, and optional-income opt-out/explicit opt-in have all been confirmed to work as of v0.5.1.
+>
+> **Historical note**: in one earlier development sandbox (predating the verification above), no Docker daemon was available, so `docker build -f Dockerfile.web` / `docker run` could not be executed there at that time; `Dockerfile.web` was instead reviewed manually. Please open an Issue if you run into a build/run problem in your own environment.
 
 ### B. Local Web UI — without Docker
 
@@ -147,14 +161,14 @@ The synthetic sample used to produce them is [`examples/synthetic_rent_roll.pdf`
 
 - CLI
 - Docker-ready CLI
-- Local Web UI MVP（プレビュー・optional income選択・Excel生成/ダウンロード）
+- Local Web UI MVP（プレビュー・optional income選択・Excel生成/ダウンロード、v0.5.0で追加）
 - CSV / text-based PDF input
 - Excel workbook output
 - Optional-income explicit opt-in
+- `Dockerfile.web` build/run verification in a working Docker daemon environment（Docker Desktop環境で確認済み、v0.5.1）
 
 **Future / not yet implemented**
 
-- `Dockerfile.web` build/run verification in an environment with a working Docker daemon（開発時のサンドボックス環境では未検証）
 - Additional real-world text-based PDF evaluation（Issue #21, open）
 - OCR / scanned PDF support
 - Smartphone photo ingestion
@@ -872,6 +886,6 @@ NOI（運営純収益）   = EGI − 運営費用合計
 
 ## バージョン・ライセンス
 
-**v0.4.2** — Apache License 2.0（Copyright 2026 km）
+**v0.5.1** — Apache License 2.0（Copyright 2026 km）
 
 変更履歴は [CHANGELOG.md](CHANGELOG.md) を参照してください。
