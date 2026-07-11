@@ -9,8 +9,8 @@
 <body>
   <h1>revenue-kun</h1>
   <p>
-    レントロール（CSV / テキスト抽出可能なPDF）のアップロードとプレビューが利用できます。
-    <strong>Excel生成・ダウンロードは次のステップで実装予定です。</strong>
+    レントロール（CSV / テキスト抽出可能なPDF）のアップロード、プレビュー、
+    直接還元法Excel（<code>direct_cap.xlsx</code>）の生成・ダウンロードが利用できます。
   </p>
 
   <section id="notices">
@@ -69,8 +69,11 @@
     <div id="optional-income-box"></div>
 
     <h3>3. Excel生成・ダウンロード</h3>
-    <p>Excel生成・ダウンロードは次のステップで実装予定です。</p>
-    <button type="button" id="generate-button" disabled>Generate Excel（準備中）</button>
+    <p>
+      「Generate Excel」を押すと、同じファイルを再送して <code>direct_cap.xlsx</code> を生成・ダウンロードします。
+      チェックした付帯収入のみがGPIに算入されます。
+    </p>
+    <button type="button" id="generate-button" disabled>Generate Excel</button>
   </section>
 
   <script src="/static/app.js"></script>

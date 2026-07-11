@@ -1,10 +1,11 @@
-"""Tests for the browser preview UI added in Issue #81.
+"""Tests for the browser preview UI (Issue #81) and generate/download UI (Issue #82).
 
 Scope: structural checks on the served HTML/JS/CSS and on the JavaScript
 source text itself. No real browser automation is used -- per the
 project's lightweight test style, string/structure inspection is
-sufficient (the actual `/api/preview` behaviour is already covered by
-`tests/test_webui_preview.py`).
+sufficient (the actual `/api/preview` and `/api/generate` behaviour is
+already covered by `tests/test_webui_preview.py` and
+`tests/test_webui_generate.py`).
 """
 from __future__ import annotations
 
@@ -35,6 +36,19 @@ def _read_app_js_code_only() -> str:
     return source
 
 
+def _extract_generate_click_handler(source: str) -> str:
+    """Return the body of generateButton's click handler.
+
+    It is the last top-level statement in the IIFE, so everything from its
+    start to the file's closing `})();` belongs to it -- a non-greedy
+    regex bounded at the first `});` would stop inside a nested
+    `.forEach(...)` call instead.
+    """
+    start = source.index('generateButton.addEventListener("click"')
+    end = source.rindex("})();")
+    return source[start:end]
+
+
 # ---------------------------------------------------------------------------
 # HTML: required notices (Issue #81 section 6)
 # ---------------------------------------------------------------------------
@@ -62,7 +76,7 @@ def test_root_states_supported_inputs_are_csv_and_text_pdf_only():
 
 
 # ---------------------------------------------------------------------------
-# app.js: fetches /api/preview, never /api/generate
+# app.js: fetches /api/preview and /api/generate (Issue #82)
 # ---------------------------------------------------------------------------
 
 def test_app_js_fetches_api_preview():
@@ -70,9 +84,9 @@ def test_app_js_fetches_api_preview():
     assert "/api/preview" in source
 
 
-def test_app_js_does_not_fetch_api_generate():
+def test_app_js_fetches_api_generate():
     source = _read_app_js_code_only()
-    assert "/api/generate" not in source
+    assert "/api/generate" in source
 
 
 # ---------------------------------------------------------------------------
@@ -90,10 +104,13 @@ def test_app_js_does_not_reference_pdf_parsing_libraries():
         assert forbidden.lower() not in source.lower()
 
 
-def test_app_js_does_not_reference_excel_or_workbook_generation():
+def test_app_js_does_not_generate_excel_content_client_side():
+    """app.js may reference "workbook"/"xlsx" only as a downloaded artifact
+    (e.g. downloadWorkbookBlob, the direct_cap.xlsx filename) -- it must not
+    construct spreadsheet content itself."""
     source = _read_app_js_code_only()
-    for forbidden in ("openpyxl", "Workbook", "xlsx", "SheetJS"):
-        assert forbidden.lower() not in source.lower()
+    for forbidden in ("openpyxl", "sheetjs", "xlsx.utils", "new workbook(", "=sum(", "cell.value"):
+        assert forbidden not in source.lower()
 
 
 def test_app_js_does_not_reference_noi_or_valuation_terms():
@@ -169,6 +186,69 @@ def test_app_js_retains_selected_file_for_future_generate_flow():
 def test_app_js_guards_against_double_submission():
     source = _read_app_js()
     assert "isSubmitting" in source
+
+
+# ---------------------------------------------------------------------------
+# Generate/download flow (Issue #82)
+# ---------------------------------------------------------------------------
+
+def test_app_js_enables_generate_button_only_after_successful_preview():
+    source = _read_app_js_code_only()
+    render_preview_fn = re.search(r"function renderPreview\(data\)\s*\{(.*?)\n  \}", source, re.DOTALL)
+    assert render_preview_fn is not None
+    assert "generateButton.disabled = false" in render_preview_fn.group(1)
+
+
+def test_app_js_disables_generate_button_on_safe_failure():
+    source = _read_app_js_code_only()
+    show_error_fn = re.search(r"function showError\(message\)\s*\{(.*?)\n  \}", source, re.DOTALL)
+    assert show_error_fn is not None
+    assert "generateButton.disabled = true" in show_error_fn.group(1)
+
+
+def test_app_js_disables_generate_button_on_new_file_selection():
+    source = _read_app_js_code_only()
+    reset_fn = re.search(r"function resetResults\(\)\s*\{(.*?)\n  \}", source, re.DOTALL)
+    assert reset_fn is not None
+    assert "generateButton.disabled = true" in reset_fn.group(1)
+
+
+def test_app_js_generate_handler_appends_selected_file():
+    source = _read_app_js_code_only()
+    handler = _extract_generate_click_handler(source)
+    assert 'formData.append("file", selectedFile)' in handler
+
+
+def test_app_js_generate_handler_appends_optional_income_selections():
+    source = _read_app_js_code_only()
+    handler = _extract_generate_click_handler(source)
+    assert "getSelectedOptionalIncomeKeys()" in handler
+    assert 'formData.append("optional_income", key)' in handler
+
+
+def test_app_js_has_blob_download_path():
+    source = _read_app_js_code_only()
+    assert "response.blob()" in source
+    assert "downloadWorkbookBlob" in source
+    assert 'link.download = "direct_cap.xlsx"' in source
+
+
+def test_app_js_distinguishes_json_error_from_binary_response():
+    source = _read_app_js_code_only()
+    handler = _extract_generate_click_handler(source)
+    assert "content-type" in handler
+    assert "application/json" in handler
+
+
+def test_app_js_generate_guards_against_double_submission():
+    source = _read_app_js_code_only()
+    handler = _extract_generate_click_handler(source)
+    assert "if (isSubmitting)" in handler
+
+
+def test_app_js_does_not_display_original_filename():
+    source = _read_app_js_code_only()
+    assert "file.name" not in source
 
 
 # ---------------------------------------------------------------------------

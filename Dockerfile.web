@@ -1,0 +1,35 @@
+# revenue-kun — Local Web UI (Step 3 MVP)
+# A local-first browser UI for rent-roll preview and direct-capitalization
+# Excel generation. This is NOT a hosted SaaS image -- see README.md for
+# the local, loopback-only `docker run` example.
+#
+# Build:
+#   docker build -f Dockerfile.web -t revenue-kun-web .
+#
+# Run (bind the host side to loopback only):
+#   docker run --rm -p 127.0.0.1:8000:8000 revenue-kun-web
+#
+# The existing CLI image (Dockerfile) is unaffected by this file.
+
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# Install dependencies (separate layer for cache efficiency).
+# requirements-web.txt references requirements.txt via `-r`, so both are
+# copied together.
+COPY requirements.txt requirements-web.txt ./
+RUN pip install --no-cache-dir -r requirements-web.txt
+
+# Web UI + domain runtime files (no tests/schemas -- not needed to run the app)
+COPY src/                    src/
+COPY webui/                  webui/
+COPY data/                   data/
+COPY assumptions.sample.yaml .
+COPY pyproject.toml          .
+
+# Uvicorn binds 0.0.0.0 inside the container so the explicit Docker port
+# mapping in the run example above works. The operator is expected to
+# publish the port with a loopback-only host bind, not to expose it
+# publicly -- see README.md.
+CMD ["python", "-m", "uvicorn", "webui.app:app", "--host", "0.0.0.0", "--port", "8000"]
