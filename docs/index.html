@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>revenue-kun — レントロールPDF/CSVから直接還元法Excelを生成するDocker対応OSS CLI</title>
+  <title>revenue-kun — レントロールPDF/CSVからローカルWeb UIで直接還元法Excelを生成するOSS</title>
   <meta
     name="description"
-    content="revenue-kunは、レントロールCSVまたはテキスト抽出可能なPDFから、直接還元法の収益試算Excelワークブックを生成するDocker対応OSS CLIです。"
+    content="revenue-kun v0.5.0は、レントロールCSVまたはテキスト抽出可能なPDFから、ローカルWeb UI（またはDocker対応CLI）で直接還元法の収益試算Excelワークブック（direct_cap.xlsx）を生成するlocal-firstなOSSです。"
   />
   <meta
     property="og:title"
-    content="revenue-kun v0.4.2 — Docker対応の不動産収益試算OSS CLI"
+    content="revenue-kun v0.5.0 — Local Web UI MVP"
   />
   <meta
     property="og:description"
-    content="レントロールPDF/CSVから、直接還元法の収益試算Excelワークブックを生成。optional incomeのGPI opt-inにも対応。"
+    content="レントロールPDF/CSVをローカルWeb UIでpreviewし、optional incomeを明示的に選択したうえでdirect_cap.xlsxを生成・ダウンロード。CLI/Docker対応も継続。"
   />
   <meta property="og:type" content="website" />
   <link rel="stylesheet" href="style.css" />
@@ -37,25 +37,28 @@
     <div class="hero-badge">
       <span class="badge badge-oss">OSS</span>
       <span class="badge badge-license">Apache 2.0</span>
-      <span class="badge badge-version">v0.4.2</span>
+      <span class="badge badge-version">v0.5.0</span>
     </div>
     <h1 class="hero-headline">
-      レントロールPDF/CSVから、<br>
-      直接還元法の収益試算Excelを。
+      CSV / テキストPDFから、<br>
+      ローカルWeb UIで直接還元法Excelを。
     </h1>
     <p class="hero-sub">
-      テキスト抽出可能なPDFまたはCSVを入力し、<br>
-      収入情報を整理した3シート構成のExcelワークブックを生成するDocker対応OSS CLIです。
+      レントロール（CSVまたはテキスト抽出可能なPDF）をブラウザでアップロードし、
+      抽出結果と付帯収入（optional income）をpreview。<br>
+      明示的に選択した項目だけをGPIに算入し、<code>direct_cap.xlsx</code> を生成・ダウンロードします。
+      CLI（Docker対応）からも同じロジックで利用できます。
       <span class="hero-sub-en">
-        Docker-ready open-source CLI for generating a direct-capitalization Excel workbook from a rent roll.
+        Local-first OSS: preview a rent roll in your browser, opt in to optional income explicitly, and download a direct-capitalization Excel workbook. Also available as a Docker-ready CLI.
       </span>
     </p>
     <div class="warn-badge">
       <span class="warn-icon">⚠</span>
-      <span>出力される金額は「収益試算値」であり、鑑定評価による「収益価格」ではありません。</span>
+      <span>出力される金額は「収益試算値」であり、鑑定評価による「収益価格」ではありません。ローカル実行専用で、ホスティング型SaaSではありません。</span>
     </div>
     <div class="hero-cta">
       <a href="https://github.com/signal-yield/revenue-kun" class="btn btn-primary">GitHub で見る</a>
+      <a href="https://github.com/signal-yield/revenue-kun/releases/tag/v0.5.0" class="btn btn-secondary">Release v0.5.0</a>
       <a href="#usage" class="btn btn-secondary">使い方を見る</a>
     </div>
   </div>
@@ -98,6 +101,10 @@
         </tr>
       </thead>
       <tbody>
+        <tr>
+          <td>ローカルWeb UI</td>
+          <td>ブラウザでレントロールをアップロードし、抽出結果・欠損情報・付帯収入をpreview。<code>direct_cap.xlsx</code> をダウンロード</td>
+        </tr>
         <tr>
           <td>レントロール読み込み</td>
           <td>CSV または text-based PDF（pdfplumber による抽出）</td>
@@ -243,6 +250,68 @@
   </div>
 </section>
 
+<!-- ━━━━━━━━━━━━━━━ Section 4b: Screenshots ━━━━━━━━━━━━━━━━━━ -->
+<section class="section section-demo">
+  <div class="container">
+    <h2>ローカルWeb UIの画面 <span class="label-synth">合成データ</span></h2>
+    <p class="section-sub">
+      以下はすべて合成サンプルデータ（<code>examples/synthetic_rent_roll.pdf</code>）から生成した画面です。
+      実レントロール・実テナント名・顧客情報は一切含みません。
+    </p>
+
+    <div class="sheet-cards">
+      <div class="sheet-card">
+        <div class="sheet-tab">1. アップロード / プレビュー</div>
+        <div class="sheet-body">
+          <img src="assets/screenshots/webui-preview.png"
+               alt="ローカルWeb UIで合成レントロールをプレビューした画面（区画数・稼働/空室サマリー・抽出テーブル・欠損情報を表示）"
+               loading="lazy">
+          <p class="sheet-desc">
+            CSVまたはテキスト抽出可能なPDFをアップロードすると、区画数・稼働/空室サマリー・抽出結果・欠損情報がその場で確認できます。
+          </p>
+        </div>
+      </div>
+
+      <div class="sheet-card">
+        <div class="sheet-tab">2. 付帯収入（optional income）</div>
+        <div class="sheet-body">
+          <img src="assets/screenshots/webui-optional-income.png"
+               alt="付帯収入（水道代収入・駐車場収入・その他収入）の抽出状況とGPI算入チェックボックス（デフォルト未選択）"
+               loading="lazy">
+          <p class="sheet-desc">
+            水道代収入・駐車場収入・その他収入は抽出されると表示されますが、<strong>デフォルトはすべて未選択（GPI非算入）</strong>です。
+            明示的にチェックした項目だけがGPIに算入されます。
+          </p>
+        </div>
+      </div>
+
+      <div class="sheet-card">
+        <div class="sheet-tab">3. 直接還元法_OER</div>
+        <div class="sheet-body">
+          <img src="assets/screenshots/workbook-oer.png"
+               alt="生成されたExcelの直接還元法_OERシート（収入項目・前提条件入力欄・収益試算値の計算結果）"
+               loading="lazy">
+          <p class="sheet-desc">
+            ダウンロードされる <code>direct_cap.xlsx</code> の収益試算サマリーシートです。仮定値はユーザーが手入力します。
+          </p>
+        </div>
+      </div>
+
+      <div class="sheet-card">
+        <div class="sheet-tab">4. 読み取りレントロール</div>
+        <div class="sheet-body">
+          <img src="assets/screenshots/workbook-rent-roll.png"
+               alt="生成されたExcelの読み取りレントロールシート（区画ごとの賃料・共益費・付帯収入・月計・年計）"
+               loading="lazy">
+          <p class="sheet-desc">
+            抽出した区画データと月計・年計を確認できます。テナント名は含まれません。
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ━━━━━━━━━━━━━━━ Section 5: Workflow ━━━━━━━━━━━━━━━━━━━━━━ -->
 <section class="section section-workflow">
   <div class="container">
@@ -299,11 +368,34 @@
   <div class="container">
     <h2>利用方法</h2>
     <p class="section-sub">
-      v0.4.2の正式な利用形態は、ローカルCLIまたはDockerです。
+      v0.5.0の正式な利用形態は、<strong>ローカルWeb UI</strong>・<strong>ローカルCLI</strong>・<strong>Docker</strong>です。
+      いずれもローカル実行専用で、ホスティング型SaaSではありません。
       claude.ai / Cowork向けSkillもリポジトリ内に収録していますが、
       Skillマーケットプレイスでは公開していません。
     </p>
     <div class="claude-cards">
+
+      <div class="claude-card">
+        <div class="claude-card-icon">🖥️</div>
+        <h3>ローカルWeb UI（推奨）</h3>
+        <p>
+          ブラウザからレントロールをアップロードし、抽出結果・付帯収入をpreviewしたうえで
+          <code>direct_cap.xlsx</code> をダウンロードできます。
+        </p>
+        <div class="code-block">
+          <div class="code-header">Docker なし</div>
+          <pre><code>python -m pip install -r requirements-web.txt
+python -m uvicorn webui.app:app --host 127.0.0.1 --port 8000</code></pre>
+        </div>
+        <div class="code-block">
+          <div class="code-header">Docker あり</div>
+          <pre><code>docker build -f Dockerfile.web -t revenue-kun-web .
+docker run --rm -p 127.0.0.1:8000:8000 revenue-kun-web</code></pre>
+        </div>
+        <p style="font-size:0.85em;color:#555;">
+          ブラウザで <code>http://127.0.0.1:8000</code> を開きます。ホスト側は <code>127.0.0.1</code>（ループバック）のみにbindされ、インターネットには公開されません。
+        </p>
+      </div>
 
       <div class="claude-card">
         <div class="claude-card-icon">🐳</div>
@@ -336,12 +428,13 @@
 
     </div>
     <p class="section-note">
-      ⚠ 合成サンプルPDFで動作確認済み。qualifying real-world PDF の評価は未完了（Issue #21 open）。
+      ⚠ 合成サンプルデータで動作確認済み。qualifying real-world PDF の評価は未完了（Issue #21 open）。
       実物件PDFはサンプル検証の範囲外であり、実務検証済みとは表記しません。
       Claude Skill マーケットプレイスへの公開は未定で、リリース済みとは表記しません。
     </p>
     <p class="section-note">
-      v0.4.2のDocker build、dry-run、テスト、Excel出力の確認結果はRelease Notesを参照してください。
+      v0.5.0では、pytest 375件・CLI smoke test・ローカルWeb UI smoke test・Docker Web UIのbuild/run/<code>/api/preview</code>/<code>/api/generate</code>を確認済みです。詳細は
+      <a href="https://github.com/signal-yield/revenue-kun/releases/tag/v0.5.0">Release Notes</a> を参照してください。
     </p>
   </div>
 </section>
@@ -426,10 +519,10 @@
           <td>実施しません。欠損は <code>missing_info.md</code> に記録します。ユーザーが確認・入力してください。</td>
         </tr>
         <tr>
-          <td>GUI / 専用Webアプリ</td>
+          <td>ホスティング型SaaS / 認証 / 複数ユーザー対応</td>
           <td>
-            未実装です。Web UI・ホスティング型SaaS・スマホ撮影対応は今後の検討対象です。
-            現在の正式な利用形態はローカルCLIまたはDockerです。
+            対象外です。v0.5.0のローカルWeb UIはローカル実行専用（<code>127.0.0.1</code> のみにbind）で、
+            ユーザーアカウント・認証・永続保存はありません。スマホ撮影対応も今後の検討対象です。
           </td>
         </tr>
       </tbody>
@@ -448,23 +541,24 @@
         <a href="https://github.com/signal-yield/revenue-kun" class="btn btn-primary">リポジトリを見る</a>
       </div>
       <div class="cta-card">
-        <h3>v0.4.2 リリースノート</h3>
+        <h3>v0.5.0 リリースノート</h3>
         <p>
-          Docker対応と、optional incomeの表示・GPI算入分離について確認できます。
+          ローカルWeb UI MVP・Docker Web UI・optional incomeのGPI opt-inについて確認できます。
         </p>
         <a
-          href="https://github.com/signal-yield/revenue-kun/releases/tag/v0.4.2"
+          href="https://github.com/signal-yield/revenue-kun/releases/tag/v0.5.0"
           class="btn btn-secondary"
         >
-          Release v0.4.2 を見る
+          Release v0.5.0 を見る
         </a>
       </div>
       <div class="cta-card">
-        <h3>合成サンプルを試す</h3>
+        <h3>README / Quick Start</h3>
         <p>
-          <code>data/sample_rentroll_simple.pdf</code> と
-          <code>assumptions.sample.yaml</code> で動作確認できます。
-          README の使い方セクションを参照してください。
+          ローカルWeb UI（Docker あり/なし）とCLIのQuick Startは
+          README にまとまっています。
+          合成サンプルの <code>examples/synthetic_rent_roll.pdf</code> や
+          <code>data/sample_rentroll_simple.pdf</code> で動作確認できます。
         </p>
         <a href="https://github.com/signal-yield/revenue-kun#readme" class="btn btn-secondary">README で手順を見る</a>
       </div>
@@ -512,7 +606,7 @@
 <footer class="site-footer">
   <div class="container">
     <p>
-      revenue-kun v0.4.2 &nbsp;·&nbsp; Apache 2.0 License &nbsp;·&nbsp;
+      revenue-kun v0.5.0 &nbsp;·&nbsp; Apache 2.0 License &nbsp;·&nbsp;
       <a href="https://github.com/signal-yield/revenue-kun">GitHub</a>
     </p>
     <p class="footer-issues">
