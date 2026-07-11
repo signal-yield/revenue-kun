@@ -13,10 +13,10 @@
 ## 1. Purpose
 
 - Evaluate whether the current extraction and calculation logic can safely process **real-world text-based rent roll PDFs** (not synthetic samples).
-- Confirm not only extraction *success*, but also:
+- Evaluate not only extraction *success*, but also:
   - no erroneous inclusion of non-income figures (deposits, guarantee money, running-cost tables, aggregate rows) into GPI,
   - correct handling of missing/optional fields (no guessed values),
-  - safe failure behavior when extraction cannot proceed.
+  - recording `failure_reason` and assessing safe-failure behavior if extraction cannot proceed.
 - This evaluation is **not** an evaluation of OCR or scanned-PDF support. All samples in scope are text-based PDFs.
 
 ---
@@ -102,6 +102,8 @@ Sample identifiers used below (`Sample A`, `Sample B`, `Sample C`) are arbitrary
 | Web UI `/api/generate` | success (HTTP 200) | success (HTTP 200) | success (HTTP 200) |
 | `failure_reason` | none | none | none |
 | Recommended action | support with current logic | support with current logic | support with current logic |
+
+> No sample triggered a failure path in this evaluation; safe-failure behavior was therefore not directly exercised.
 
 ---
 
