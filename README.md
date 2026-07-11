@@ -1,8 +1,13 @@
 # revenue-kun（収益還元クン） v0.4.2
 
-直接還元法による**収益試算ツール**（CLI）。レントロールと前提条件から
+**Local-first OSS tool for real estate income-estimation workflows.**
+Rent roll CSV / text-based PDF → direct-capitalization Excel workbook.
+Available as a **CLI** (Docker-ready) and a **local Web UI** — not a hosted SaaS.
+
+直接還元法による**収益試算ツール**。レントロール（CSV または テキスト抽出可能なPDF）と前提条件から
 NOI（運営純収益）を算出し、**収益試算値**と感応度分析を出力します。
-オプションで直接還元法 Excel ワークブック（`.xlsx`）を生成できます。
+オプションで直接還元法 Excel ワークブック（`direct_cap.xlsx`）を生成できます。
+**CLI**（Docker対応）に加えて、ブラウザから使える**ローカルWeb UI**もあります（ホスティング型SaaSではありません）。
 
 > **v0.4.2 — Docker 対応・optional income 対応**  
 > Docker build / run / pytest / Excel出力を実機検証済み。  
@@ -33,6 +38,108 @@ NOI（運営純収益）を算出し、**収益試算値**と感応度分析を�
 > - 正式な鑑定評価、価格判断、投資判断、法的判断が必要な場合は、不動産鑑定士、弁護士、税理士その他の専門家に確認してください。revenue-kun は、専門家による判断の前段階で、前提条件に基づく収益試算値を検算・整理するための補助ツールです。
 >
 > *For formal appraisal, pricing decisions, investment decisions, or legal/tax conclusions, consult a qualified real estate appraiser, attorney, tax advisor, or other relevant professional. revenue-kun is intended as a support tool for organizing and checking trial income estimates based on explicit assumptions before professional review.*
+
+---
+
+## Current status — what works today
+
+| Capability | Status |
+|---|---|
+| CLI workflow | ✅ Implemented |
+| Docker-ready CLI workflow | ✅ Implemented |
+| Local FastAPI Web UI | ✅ Implemented |
+| CSV input | ✅ Implemented |
+| Text-based PDF input | ✅ Implemented |
+| Rent-roll preview (Web UI) | ✅ Implemented |
+| Missing-information preview (Web UI) | ✅ Implemented |
+| Optional-income preview (water / parking / other income) | ✅ Implemented |
+| Optional-income explicit opt-in for GPI inclusion | ✅ Implemented |
+| `direct_cap.xlsx` workbook generation | ✅ Implemented |
+| Workbook download (Web UI, via `/api/generate`) | ✅ Implemented |
+
+See [Supported / unsupported inputs](#supported--unsupported-inputs) and [Roadmap](#roadmap) below for what is out of scope today.
+
+## Quick Start
+
+### A. Local Web UI — with Docker
+
+```bash
+docker build -f Dockerfile.web -t revenue-kun-web .
+docker run --rm -p 127.0.0.1:8000:8000 revenue-kun-web
+```
+
+Then open `http://127.0.0.1:8000/` in your browser. The host side is bound to `127.0.0.1` (loopback) only — this is **not** exposed to the public internet, and this is **not** a hosted SaaS. Building/running this image requires a working Docker daemon.
+
+> **Development note**: in one prior development sandbox, no Docker daemon was available, so `docker build -f Dockerfile.web` / `docker run` could not be executed there. `Dockerfile.web` was reviewed manually and the underlying `uvicorn webui.app:app` command it runs was verified directly (see [ローカルWeb UI（Step 3, ベータ）](#ローカルweb-ui-step-3-ベータ) below). Please open an Issue if you run into a build/run problem in your own environment.
+
+### B. Local Web UI — without Docker
+
+```powershell
+python -m pip install -r requirements-web.txt
+python -m uvicorn webui.app:app --host 127.0.0.1 --port 8000
+```
+
+### C. CLI workflow
+
+The original CLI is unchanged — see [セットアップ](#セットアップ) / [実行（PowerShell）](#実行powershell) below for the full walkthrough, or jump straight in:
+
+```powershell
+python -m pip install -r requirements.txt
+python src/main.py --assumptions assumptions.sample.yaml --rent-roll-pdf data/sample_rentroll_simple.pdf --output ./output --excel-output ./output/direct_cap.xlsx
+```
+
+## Supported / unsupported inputs
+
+| Item | Supported now |
+|---|---|
+| CSV rent roll | Yes |
+| Text-based PDF rent roll | Yes |
+| Scanned PDF | No |
+| Smartphone photo | No |
+| OCR | No |
+| Hosted SaaS | No |
+| Output | `direct_cap.xlsx` |
+
+対応入力は CSV とテキスト抽出可能な PDF のみです。スキャン PDF・スマホ撮影・OCR には対応していません。ホスティング型 SaaS としては提供していません。
+
+## Optional income (water / parking / other income)
+
+- 水道代収入・駐車場収入・その他収入（water income / parking income / other income）は、抽出された場合、プレビューおよび読み取りレントロールシートに表示されます。
+- **デフォルトでは GPI（潜在総収入）に算入されません。**
+- **明示的に選択したカテゴリのみ** GPI に算入されます。自動的な算入はありません。
+- この挙動は CLI（`assumptions.yaml` の `optional_income.include_in_gpi` / `columns`）と Web UI（optional-income チェックボックス）の両方で共通です。
+
+## Workbook output
+
+生成される `direct_cap.xlsx` は3シート構成です。詳細は [直接還元法 Excel ワークブック出力](#直接還元法-excel-ワークブック出力) を参照してください。
+
+- `直接還元法_OER`
+- `直接還元法‗費用詳細版`
+- `読み取りレントロール`
+
+## Screenshots
+
+Screenshots will be added using synthetic sample data only.
+No real rent rolls, tenant names, or client data will be used.
+
+## Roadmap
+
+**Completed**
+
+- CLI
+- Docker-ready CLI
+- Local Web UI MVP（プレビュー・optional income選択・Excel生成/ダウンロード）
+- CSV / text-based PDF input
+- Excel workbook output
+- Optional-income explicit opt-in
+
+**Future / not yet implemented**
+
+- `Dockerfile.web` build/run verification in an environment with a working Docker daemon（開発時のサンドボックス環境では未検証）
+- Additional real-world text-based PDF evaluation（Issue #21, open）
+- OCR / scanned PDF support
+- Smartphone photo ingestion
+- Hosted SaaS（今後の意思決定次第。現時点では計画なし）
 
 ---
 
