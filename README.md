@@ -585,6 +585,57 @@ docker run --rm revenue-kun python -m pytest -q
 
 ---
 
+## ローカルWeb UI（Step 3, ベータ）
+
+revenue-kun には、ブラウザからレントロールをアップロードし、プレビューと直接還元法Excelのダウンロードができる**ローカル専用**のWeb UIがあります。
+
+> **重要**
+> - このWeb UIは**ローカル実行専用**です。**ホスティング型SaaSではありません。**
+> - 対応する入力は **CSV** および **テキスト抽出可能なPDF** のみです。**OCR・スキャンPDF・スマホ撮影には対応していません。**
+> - 出力は `direct_cap.xlsx`（直接還元法の収益試算Excel）です。**鑑定評価ではありません。**投資助言・法律助言・税務助言でもありません。
+> - アップロードしたファイルはこのローカルWeb UI内でのみ処理され、外部のAPIやサービスへは送信されません。
+> - 既存のCLI（`python src/main.py ...`）の利用方法・出力（`missing_info.md` / `revenue_analysis.xlsx` / `extraction_log.json`）はこのWeb UIによって変更されません。
+
+### Web UI依存関係のインストール（ローカル実行）
+
+```powershell
+python -m pip install -r requirements-web.txt
+python -m uvicorn webui.app:app --host 127.0.0.1 --port 8000
+```
+
+ブラウザで `http://127.0.0.1:8000/` を開きます。
+
+### Web UI用Dockerイメージ（既存CLI用`Dockerfile`とは別）
+
+```bash
+# ビルド
+docker build -f Dockerfile.web -t revenue-kun-web .
+
+# 実行（ホスト側はループバックのみにバインド。外部公開しないでください）
+docker run --rm -p 127.0.0.1:8000:8000 revenue-kun-web
+```
+
+コンテナ内部では Uvicorn が `0.0.0.0:8000` で待ち受けますが、上記の `-p 127.0.0.1:8000:8000` により、ホスト側からは `127.0.0.1`（ローカルマシン自身）からのみアクセス可能です。インターネットへの公開は想定していません。
+
+既存のCLI用イメージ（`Dockerfile`、`docker build -t revenue-kun .`）はこのWeb UIによって変更されません。
+
+### 使い方の流れ
+
+1. `http://127.0.0.1:8000/` を開き、CSVまたはテキスト抽出可能なPDFを選択する
+2. 「Preview」でレントロールの抽出結果・欠損情報・付帯収入（水道代・駐車場・その他収入）の抽出状況を確認する
+3. GPIに含めたい付帯収入があれば、該当するチェックボックスを選択する（デフォルトはすべて未選択＝GPI非算入）
+4. 「Generate Excel」で `direct_cap.xlsx` をダウンロードする
+5. ダウンロードしたExcelの `直接還元法_OER` シートで、空室損失率・還元利回り等の前提条件を入力する
+
+### 現時点の制限
+
+- OCR・スキャンPDF・スマホ撮影には対応していません
+- ホスティング型SaaSとしては提供していません（ローカル実行専用）
+- ユーザーアカウント・認証・複数ユーザー対応はありません
+- アップロードや生成したExcelを永続的に保存しません（リクエストごとに一時ファイルとして処理し、完了後に削除します）
+
+---
+
 ## 出荷前チェックリスト（PowerShell）
 
 GitHub公開・PR前に、以下が順に成功することを確認します。

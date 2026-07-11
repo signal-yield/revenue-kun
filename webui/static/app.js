@@ -1,15 +1,18 @@
 /*
- * Browser-side preview UI for revenue-kun's Step 3 Web UI (Issue #81).
+ * Browser-side preview + generate UI for revenue-kun's Step 3 Web UI
+ * (Issues #81, #82).
  *
- * Scope: file selection, calling the existing POST /api/preview endpoint,
- * and rendering its JSON response. This file must not parse CSV/PDF,
- * compute missing information, decide optional-income GPI inclusion, or
- * perform any NOI/valuation/Excel-formula calculation -- all of that
- * stays in src/revenue_kun/ and is reused by webui/preview.py on the
- * server. See Issue #78 for the approved architecture decision.
+ * Scope: file selection, calling the existing POST /api/preview and
+ * POST /api/generate endpoints, and rendering their responses. This file
+ * must not parse CSV/PDF, compute missing information, decide
+ * optional-income GPI inclusion, or perform any NOI/valuation/Excel-formula
+ * calculation -- all of that stays in src/revenue_kun/ and is reused by
+ * webui/preview.py and webui/generate.py on the server. See Issue #78 for
+ * the approved architecture decision.
  *
- * The generate/download action is intentionally always disabled here;
- * POST /api/generate and Excel generation are implemented in Issue #82.
+ * Stateless: the same browser-selected File used for preview is resent,
+ * unmodified, to /api/generate -- nothing is kept server-side between the
+ * two requests.
  */
 (function () {
   "use strict";
@@ -198,9 +201,8 @@
     renderMissing(data.missing);
     renderOptionalIncome(data.optional_income);
     show(resultsBox);
-    // Excel generation belongs to #82; this action stays disabled here
-    // regardless of whether the preview succeeded.
-    generateButton.disabled = true;
+    // A successful preview is the only thing that enables Excel generation.
+    generateButton.disabled = false;
   }
 
   fileInput.addEventListener("change", function () {
@@ -246,6 +248,62 @@
       .finally(function () {
         isSubmitting = false;
         previewButton.disabled = false;
+      });
+  });
+
+  function downloadWorkbookBlob(blob) {
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement("a");
+    link.href = url;
+    link.download = "direct_cap.xlsx";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
+  generateButton.addEventListener("click", function () {
+    if (isSubmitting) {
+      return;
+    }
+    if (!selectedFile) {
+      showError("CSVまたはPDFファイルを選択してください。");
+      return;
+    }
+
+    isSubmitting = true;
+    generateButton.disabled = true;
+
+    var formData = new FormData();
+    // The same browser-selected File used for preview is resent here,
+    // unmodified -- the server re-extracts it from scratch and does not
+    // reuse anything from the earlier /api/preview call.
+    formData.append("file", selectedFile);
+    getSelectedOptionalIncomeKeys().forEach(function (key) {
+      formData.append("optional_income", key);
+    });
+
+    fetch("/api/generate", { method: "POST", body: formData })
+      .then(function (response) {
+        var contentType = response.headers.get("content-type") || "";
+        if (contentType.indexOf("application/json") !== -1) {
+          return response.json().then(function (data) {
+            var message =
+              (data && data.error && data.error.message) || "Excel生成に失敗しました。";
+            showError(message);
+          });
+        }
+        return response.blob().then(downloadWorkbookBlob);
+      })
+      .catch(function () {
+        showError("通信エラーが発生しました。しばらくしてから再度お試しください。");
+      })
+      .finally(function () {
+        isSubmitting = false;
+        // Re-enable only while the underlying preview is still showing;
+        // any failure/new-file-selection path already forces this back to
+        // true via resetResults()/showError().
+        generateButton.disabled = resultsBox.hidden;
       });
   });
 })();

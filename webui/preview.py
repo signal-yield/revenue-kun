@@ -142,25 +142,30 @@ def build_preview(
     }
 
 
-def process_upload(client_filename: str | None, source: BinaryIO) -> dict[str, Any]:
-    """Validate, persist, extract, and build a preview response for one upload.
+def extract_units_from_upload(
+    client_filename: str | None, source: BinaryIO
+) -> tuple[list[RentRollUnit], str]:
+    """Validate, persist, and extract rent-roll units from one upload.
 
-    ``client_filename`` is used only to read its extension (via
-    ``validate_extension``); it is never written to a temporary path,
-    included in the response, or written to logs. ``source`` must expose
-    a synchronous ``.read(n)`` (e.g. FastAPI's ``UploadFile.file``).
+    Shared by the preview endpoint (``/api/preview``) and the workbook
+    generation endpoint (``/api/generate``, see ``webui.generate``) so the
+    upload-validation and extraction-failure mapping is defined exactly
+    once. ``client_filename`` is used only to read its extension; it is
+    never written to a temporary path, included in a response, or written
+    to logs. ``source`` must expose a synchronous ``.read(n)`` (e.g.
+    FastAPI's ``UploadFile.file``).
 
     Raises ``PreviewFailure`` for any handled validation or extraction
-    failure. Temporary files are always removed before this function
-    returns or raises, via ``request_temp_dir``.
+    failure. The request-specific temporary directory used to hold the
+    upload is always removed before this function returns or raises.
+
+    Returns ``(units, input_type)`` where ``input_type`` is ``"csv"`` or
+    ``"pdf"``.
     """
     try:
         extension = validate_extension(client_filename)
     except UploadValidationError as exc:
         raise PreviewFailure("invalid_upload", str(exc), "unsupported_extension", 400) from exc
-
-    assumptions = load_assumptions(_DEFAULT_ASSUMPTIONS_PATH)
-    validate_assumptions(assumptions)
 
     with request_temp_dir() as temp_dir:
         temp_path = temp_dir / generate_temp_filename(extension)
@@ -208,6 +213,19 @@ def process_upload(client_filename: str | None, source: BinaryIO) -> dict[str, A
                     422,
                 ) from exc
 
-        missing = detect_missing(assumptions, units, rent_roll_source=input_type)
+    return units, input_type
+
+
+def process_upload(client_filename: str | None, source: BinaryIO) -> dict[str, Any]:
+    """Validate, extract, and build a preview response for one upload.
+
+    See ``extract_units_from_upload`` for the shared validation/extraction
+    behaviour and its failure contract.
+    """
+    units, input_type = extract_units_from_upload(client_filename, source)
+
+    assumptions = load_assumptions(_DEFAULT_ASSUMPTIONS_PATH)
+    validate_assumptions(assumptions)
+    missing = detect_missing(assumptions, units, rent_roll_source=input_type)
 
     return build_preview(units, missing, input_type)

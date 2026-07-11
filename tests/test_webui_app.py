@@ -1,7 +1,9 @@
-"""Tests for the webui FastAPI application foundation (Issue #79).
+"""Tests for the webui FastAPI application foundation and root page.
 
-Scope: root page and health endpoint only. No CSV/PDF handling, preview,
-or Excel generation exists yet -- those belong to later issues.
+Originally scoped to the root page and health endpoint only (Issue #79);
+now also covers the HTML markup added for the preview UI (#81) and the
+generate/download UI (#82). Endpoint behaviour itself is covered in
+tests/test_webui_preview.py and tests/test_webui_generate.py.
 """
 from __future__ import annotations
 
@@ -63,11 +65,12 @@ def test_root_states_output_is_not_appraisal():
     assert "鑑定評価" in response.text
 
 
-def test_root_does_not_claim_excel_download_is_available():
-    """Preview exists as of #80/#81, but Excel generation/download does not yet (#82)."""
+def test_root_offers_excel_generation_and_download():
+    """Excel generation/download is implemented as of #82."""
     client = TestClient(app)
     response = client.get("/")
-    assert "準備中" in response.text
+    assert "direct_cap.xlsx" in response.text
+    assert "Generate Excel" in response.text
 
 
 def test_healthz_returns_minimal_ok_response():
@@ -100,12 +103,13 @@ def test_root_has_optional_income_display_area():
     assert 'id="optional-income-box"' in response.text
 
 
-def test_root_has_disabled_generate_placeholder():
+def test_root_has_generate_button_disabled_before_preview():
+    """The generate button starts disabled in the static HTML; app.js enables
+    it only after a successful preview (Issue #82)."""
     client = TestClient(app)
     response = client.get("/")
     assert 'id="generate-button"' in response.text
     assert "disabled" in response.text
-    assert "次のステップで実装予定" in response.text
 
 
 def test_root_states_optional_income_excluded_from_gpi_by_default():
