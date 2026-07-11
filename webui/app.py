@@ -8,7 +8,11 @@ approved architecture decision.
 Scope so far:
   - Issue #79: root page and a health endpoint.
   - Issue #80: `POST /api/preview` -- CSV/PDF preview only, no Excel
-    generation, no optional-income opt-in UI. Those remain for #81/#82.
+    generation, no optional-income opt-in UI.
+  - Issue #81: browser preview UI (`webui/static/app.js`) and
+    optional-income checkboxes (display/opt-in only, no
+    `OptionalIncomeConfig`, no GPI decision). Excel generation and
+    `POST /api/generate` remain for #82.
 """
 from __future__ import annotations
 
@@ -18,14 +22,17 @@ from fastapi import FastAPI, File, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.requests import Request
 from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from .config import get_max_upload_mb
 from .preview import PreviewFailure, process_upload
 
 _TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
+_STATIC_DIR = Path(__file__).resolve().parent / "static"
 
 app = FastAPI(title="revenue-kun Web UI")
+app.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")
 _templates = Jinja2Templates(directory=str(_TEMPLATES_DIR))
 
 
