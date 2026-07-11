@@ -2,30 +2,77 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <title>revenue-kun Web UI（準備中）</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>revenue-kun Web UI</title>
+  <link rel="stylesheet" href="/static/styles.css" />
 </head>
 <body>
   <h1>revenue-kun</h1>
-  <p><strong>ローカルWeb UIは準備中です。</strong>アップロード・プレビュー・Excelダウンロードはまだ利用できません。</p>
-
-  <h2>対応予定の入力</h2>
-  <ul>
-    <li>CSV</li>
-    <li>テキスト抽出可能なPDF</li>
-  </ul>
-
-  <h2>現時点で未対応</h2>
-  <ul>
-    <li>OCR</li>
-    <li>スキャンPDF</li>
-    <li>スマホ撮影</li>
-    <li>ホスティング型SaaS</li>
-  </ul>
-
   <p>
-    出力は「収益試算値」を算出する収益試算Excelであり、鑑定評価による収益価格ではありません。
+    レントロール（CSV / テキスト抽出可能なPDF）のアップロードとプレビューが利用できます。
+    <strong>Excel生成・ダウンロードは次のステップで実装予定です。</strong>
   </p>
 
-  <p>アップロード上限（予定）: {{ max_upload_mb }} MiB</p>
+  <section id="notices">
+    <h2>ご利用にあたっての注意</h2>
+    <ul>
+      <li>出力は収益試算Excelであり、鑑定評価ではありません。金額は「収益試算値」であり「収益価格」ではありません。</li>
+      <li>投資助言・法律助言・税務助言ではありません。</li>
+      <li>対応する入力はCSVおよびテキスト抽出可能なPDFのみです。</li>
+      <li>OCR・スキャンPDF・スマホ撮影には対応していません。</li>
+      <li>ホスティング型SaaSとしては提供していません。ローカル環境で動作するWeb UIです。</li>
+      <li>水道代収入・駐車場収入・その他収入は、明示的に選択しない限りGPI（潜在総収入）に算入されません。</li>
+      <li>欠損項目は自動的に推定・補完しません。</li>
+      <li>アップロードしたファイルはこのローカルWeb UI内でのみ処理され、外部のAPIやサービスへは送信されません。</li>
+    </ul>
+  </section>
+
+  <section id="upload-section">
+    <h2>1. ファイルを選択</h2>
+    <p>アップロード上限: {{ max_upload_mb }} MiB</p>
+    <input type="file" id="file-input" accept=".csv,.pdf" />
+    <button type="button" id="preview-button">Preview</button>
+  </section>
+
+  <section id="error-box" hidden></section>
+
+  <section id="results-box" hidden>
+    <h2>2. プレビュー結果</h2>
+    <div id="summary-box"></div>
+
+    <h3>レントロール</h3>
+    <div class="table-scroll">
+      <table id="rows-table">
+        <thead>
+          <tr>
+            <th>部屋</th>
+            <th>状態</th>
+            <th>賃料</th>
+            <th>共益費</th>
+            <th>水道代収入</th>
+            <th>駐車場収入</th>
+            <th>その他収入</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <h3>欠損情報</h3>
+    <ul id="missing-list"></ul>
+
+    <h3>付帯収入（optional income）</h3>
+    <p>
+      抽出された付帯収入は表示のみです。チェックした項目だけが将来のGPI算入対象候補になります。
+      デフォルトはすべて未選択（GPI非算入）です。
+    </p>
+    <div id="optional-income-box"></div>
+
+    <h3>3. Excel生成・ダウンロード</h3>
+    <p>Excel生成・ダウンロードは次のステップで実装予定です。</p>
+    <button type="button" id="generate-button" disabled>Generate Excel（準備中）</button>
+  </section>
+
+  <script src="/static/app.js"></script>
 </body>
 </html>

@@ -1,0 +1,95 @@
+:root {
+  color-scheme: light dark;
+}
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  margin: 0;
+  padding: 1rem;
+  max-width: 960px;
+  margin-inline: auto;
+  line-height: 1.6;
+  box-sizing: border-box;
+}
+
+*, *::before, *::after {
+  box-sizing: inherit;
+}
+
+h1, h2, h3 {
+  line-height: 1.3;
+}
+
+#notices ul {
+  padding-left: 1.2rem;
+}
+
+#error-box {
+  color: #b00020;
+  border: 1px solid #b00020;
+  border-radius: 4px;
+  padding: 0.75rem;
+  margin: 1rem 0;
+}
+
+#error-box[hidden],
+#results-box[hidden] {
+  display: none;
+}
+
+.table-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 480px;
+}
+
+th, td {
+  border: 1px solid #ccc;
+  padding: 0.4rem 0.6rem;
+  text-align: right;
+  white-space: nowrap;
+}
+
+th:first-child, td:first-child,
+th:nth-child(2), td:nth-child(2) {
+  text-align: left;
+}
+
+.optional-income-row {
+  margin: 0.4rem 0;
+}
+
+#missing-list .severity-error {
+  color: #b00020;
+  font-weight: bold;
+}
+
+#missing-list .severity-warning {
+  color: #8a6d00;
+}
+
+button {
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+input[type="file"] {
+  margin-right: 0.5rem;
+  max-width: 100%;
+}
+
+@media (max-width: 480px) {
+  body {
+    padding: 0.75rem;
+  }
+}
