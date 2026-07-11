@@ -1,0 +1,16 @@
+# revenue-kun Web UI dependencies (Step 3 local Web UI foundation, Issue #79 / #78).
+# Reuses the existing CLI requirements and adds only Web UI transport deps.
+# Policy: guarantee a lower bound and cap fragile deps below the next major,
+# matching the convention already used in requirements.txt.
+-r requirements.txt
+
+fastapi>=0.110,<1.0
+uvicorn>=0.29,<1.0
+jinja2>=3.1,<4
+python-multipart>=0.0.9,<0.1
+
+# httpx is required by Starlette's TestClient (used by tests/test_webui_*.py).
+# It is not a runtime dependency of the app itself, but FastAPI's base install
+# does not pull it in, so it is listed explicitly to keep `pip install -r
+# requirements-web.txt && pytest` reproducible on a clean environment.
+httpx>=0.24,<1.0
