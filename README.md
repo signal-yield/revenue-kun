@@ -14,14 +14,14 @@ NOI（運営純収益）を算出し、**収益試算値**と感応度分析を�
 > 賃料・共益費・水道代収入・駐車場収入・その他収入といった経常的な付帯収入は、利用者の選択なしで両計算シートのGPIへ自動反映されます（**optional incomeのopt-in/opt-out選択は廃止**）。  
 > `直接還元法‗費用詳細版` は、個別運営費用（管理費・修繕費・損害保険料・固定資産税・水道光熱費・その他運営費用）を入力すると、`直接還元法_OER` から完全に独立してEGI→NOI→純収益→収益試算値まで自算定します（旧バージョンの「経費率の妥当性確認用の参考表示」から変更）。両シートは互いの入力値・計算値・シートを一切参照しません。  
 > `assumptions.yaml` の `optional_income.include_in_gpi` / `columns` 設定は非推奨です。後方互換のため引き続き受理しますが、計算結果には一切影響しません。  
-> qualifying real-world PDF 評価は未完了（Issue #21 open）。実務検証済みとは表記しません。
+> 同一ベンダー系テンプレートとみられる非公開の実物件テキストPDF3件について、CLIおよびLocal Web UIからの抽出・Excel生成を確認済みです。テンプレート多様性の検証はIssue #21で継続しています。
 
 > **v0.5.1 — バージョン・ドキュメント整合パッチ**  
 > v0.5.0（Local Web UI MVP）に対する、機能変更を伴わない version / documentation alignment patch です。  
 > 内部 `__version__` と `VERSION` ファイルを公開版（GitHub Release / GitHub Pages LP）と整合させ、README の Docker Web UI 検証状況の記載を実機検証済みの内容に更新しました。  
 > Local Web UI の主要機能（ブラウザからのアップロード・プレビュー・`direct_cap.xlsx` 生成/ダウンロード）は v0.5.0 で追加されたものであり、v0.5.1 での新規追加ではありません。  
 > CLI は引き続き利用可能です。抽出ロジック・計算ロジック・Web UI の挙動・optional income の仕様に変更はありません。  
-> qualifying real-world PDF 評価は未完了（Issue #21 open）。実務検証済みとは表記しません。
+> 同一ベンダー系テンプレートとみられる非公開の実物件テキストPDF3件について、CLIおよびLocal Web UIからの抽出・Excel生成を確認済みです。テンプレート多様性の検証はIssue #21で継続しています。
 
 > **v0.5.0 — Local Web UI MVP**  
 > ブラウザから使えるローカルWeb UI（アップロード・プレビュー・`direct_cap.xlsx` 生成/ダウンロード）を追加。  
@@ -550,7 +550,7 @@ python src/main.py --assumptions assumptions.sample.yaml --rent-roll-pdf data/sa
 | 項目 | 状態 |
 |------|------|
 | OCR・スキャン PDF | 対象外 |
-| qualifying real-world PDF の評価 | 未完了（Issue #21 open）。実務検証済みとは表記しません |
+| qualifying real-world PDF の評価 | 同一ベンダー系テンプレートとみられる非公開の実物件テキストPDF3件でCLI・Local Web UIからの抽出・Excel生成を確認済み。テンプレート多様性の検証はIssue #21で継続中 |
 | 空室区画の賃料推測補完 | 実施しません。空欄はユーザーが手入力します |
 | 鑑定評価 | 対象外。出力は「収益試算値」であり「収益価格」ではありません |
 | 投資助言・法律助言・税務助言 | 対象外 |
@@ -568,7 +568,7 @@ clone もターミナルも不要で、レントロール PDF をアップロー
 | `skill/SKILL.md` | Skill エントリポイント（トリガー・免責・入出力定義） |
 | `build_skill.py` | `src/` → `skill/scripts/` 同期スクリプト |
 
-> qualifying real-world PDF 評価は未完了（Issue #21 open）。実務検証済みとは表記しません。
+> 同一ベンダー系テンプレートとみられる非公開の実物件テキストPDF3件について、CLIおよびLocal Web UIからの抽出・Excel生成を確認済みです。テンプレート多様性の検証はIssue #21で継続しています。
 > Claude Skill マーケットプレイスへの公開は未定。Claude Skill リリース済みとは表記しません。
 
 ---
@@ -670,7 +670,7 @@ python -m pytest -q
 Python 環境を構築せずに、Docker で再現可能な CLI 実行環境を使えます。
 
 > OCR・スキャン PDF・スマホ撮影対応は Docker イメージに含まれません（今後の検討対象）。
-> qualifying real-world PDF 評価は未完了（Issue #21 open）。実務検証済みとは表記しません。
+> 同一ベンダー系テンプレートとみられる非公開の実物件テキストPDF3件について、CLIおよびLocal Web UIからの抽出・Excel生成を確認済みです。テンプレート多様性の検証はIssue #21で継続しています。
 
 ### ビルド
 

@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## [v0.5.2] — 2026-07-11
+## [v0.5.2] — 2026-07-12
 
 Product boundary re-confirmed: revenue-kun's job ends at generating the 3-sheet
 `direct_cap.xlsx` workbook. The app never asks the user to choose between the
