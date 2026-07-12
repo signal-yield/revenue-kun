@@ -152,6 +152,59 @@ def build_pdf(path: str | Path, headers: list[str], rows: list[list[str]]) -> Pa
     return path
 
 
+def build_pdf_with_preamble(
+    path: str | Path,
+    preamble_rows: list[list[str]],
+    headers: list[str],
+    rows: list[list[str]],
+) -> Path:
+    """ヘッダー行より前に非ヘッダー行（表紙・タイトル行等）を持つ表PDFを生成する。
+
+    pdfplumber が1つのテーブルとして抽出したとき、ヘッダーが row[0] 以外に現れる
+    実物件 PDF のレイアウトを再現するためのテスト用ビルダ。
+
+    preamble_rows が先頭にあり、その後に headers 行、続いて rows が来る。
+    """
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    pdfmetrics.registerFont(UnicodeCIDFont(_FONT))
+
+    styles = getSampleStyleSheet()
+    body_style = ParagraphStyle(
+        "JPBody2", parent=styles["Normal"], fontName=_FONT, fontSize=8, leading=11
+    )
+
+    doc = SimpleDocTemplate(
+        str(path),
+        pagesize=A4,
+        topMargin=20 * mm,
+        bottomMargin=20 * mm,
+        leftMargin=15 * mm,
+        rightMargin=15 * mm,
+    )
+
+    data = preamble_rows + [headers] + rows
+    table = Table(data)
+    table.setStyle(
+        TableStyle(
+            [
+                ("FONTNAME", (0, 0), (-1, -1), _FONT),
+                ("FONTSIZE", (0, 0), (-1, -1), 9),
+                ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("TOPPADDING", (0, 0), (-1, -1), 3),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+                # preamble 行は背景色でヘッダー行と区別
+                ("BACKGROUND", (0, 0), (-1, len(preamble_rows) - 1), colors.HexColor("#EEEEEE")),
+                ("BACKGROUND", (0, len(preamble_rows)), (-1, len(preamble_rows)), colors.HexColor("#305496")),
+                ("TEXTCOLOR", (0, len(preamble_rows)), (-1, len(preamble_rows)), colors.white),
+            ]
+        )
+    )
+    doc.build([table, Spacer(1, 4 * mm), Paragraph("（合成テストデータ）", body_style)])
+    return path
+
+
 def build_text_only_pdf(path: str | Path) -> Path:
     """テーブルを含まないテキストのみのPDFを生成する（safe failure テスト用）。
 

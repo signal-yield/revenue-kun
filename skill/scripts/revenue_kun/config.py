@@ -16,6 +16,26 @@ class AssumptionsError(ValueError):
     """assumptions.yaml の入力値が不正な場合に送出する（壊れた計算を継続しない）。"""
 
 
+# 付帯収入として認識する canonical key の集合。
+# pdf_extract._HEADER_KEYS のエントリと対応させること。
+OPTIONAL_INCOME_CANONICAL_KEYS: frozenset[str] = frozenset(
+    {"water", "parking", "other_income"}
+)
+
+
+@dataclass
+class OptionalIncomeConfig:
+    """付帯収入（水道代・駐車場収入・その他収入）の GPI 算入制御。
+
+    include_in_gpi=False（デフォルト）のとき付帯収入は GPI に算入しない。
+    include_in_gpi=True かつ columns に指定した canonical key のみ GPI に算入する。
+    有効な columns: water / parking / other_income
+    """
+
+    include_in_gpi: bool = False
+    columns: list[str] = field(default_factory=list)
+
+
 @dataclass
 class Assumptions:
     """assumptions.yaml の内容を保持する。null はそのまま None で保持する。"""
@@ -28,6 +48,7 @@ class Assumptions:
     sensitivity_cap_deltas: list[float] = field(default_factory=list)
     sensitivity_noi_rates: list[float] = field(default_factory=list)
     raw: dict[str, Any] = field(default_factory=dict)
+    optional_income: OptionalIncomeConfig = field(default_factory=OptionalIncomeConfig)
 
 
 def load_assumptions(path: str | Path) -> Assumptions:
@@ -44,6 +65,11 @@ def load_assumptions(path: str | Path) -> Assumptions:
         raw = yaml.safe_load(f) or {}
 
     sens = raw.get("感応度分析", {}) or {}
+    oi_raw = raw.get("optional_income", {}) or {}
+    optional_income = OptionalIncomeConfig(
+        include_in_gpi=bool(oi_raw.get("include_in_gpi", False)),
+        columns=[str(c) for c in (oi_raw.get("columns") or [])],
+    )
 
     return Assumptions(
         property_info=raw.get("物件", {}) or {},
@@ -54,6 +80,7 @@ def load_assumptions(path: str | Path) -> Assumptions:
         sensitivity_cap_deltas=sens.get("還元利回り変動幅", []) or [],
         sensitivity_noi_rates=sens.get("NOI変動率", []) or [],
         raw=raw,
+        optional_income=optional_income,
     )
 
 

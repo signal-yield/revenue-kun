@@ -135,12 +135,24 @@ def run(
             "cells_missing": report.cells_missing,
             "column_map": report.column_map,
             "notes": report.notes,
+            "optional_income_found": report.optional_income_found,
         }
         rr_source = report.pdf_name
         print(f"PDF抽出: {report.pdf_name} から {report.rows_extracted} 区画を抽出しました"
               f"（欠損セル {report.cells_missing} 件）。")
         for n in report.notes:
             print(f"  [注記] {n}")
+        if report.optional_income_found:
+            for oi_key in report.optional_income_found:
+                print(
+                    f"  [付帯収入] {oi_key} 列を抽出しました → "
+                    "経常的な付帯収入として direct_cap.xlsx の両計算シートへ自動算入します。"
+                )
+            if assumptions.optional_income.include_in_gpi or assumptions.optional_income.columns:
+                print(
+                    "  [注記] assumptions.yaml の optional_income 設定は非推奨です"
+                    "（v0.5.2以降、付帯収入は選択によらず自動算入されます）。"
+                )
         _print_diagnostics_summary(
             input_type="PDF",
             units=report.rows_extracted,
@@ -216,7 +228,7 @@ def run(
     # 10. 直接還元法 Excel ワークブック（--excel-output 指定時のみ）
     if excel_output_path is not None:
         dc_rows = [DirectCapRow.from_rent_roll_unit(u) for u in units]
-        write_direct_cap_workbook(excel_output_path, dc_rows)
+        write_direct_cap_workbook(excel_output_path, dc_rows, oi_config=assumptions.optional_income)
 
     print("-" * 64)
     print("出力ファイル:")

@@ -112,8 +112,6 @@ def test_skill_full_run_and_oer_model(tmp_path):
 REQUIRED_DISCLAIMER_PHRASES = [
     "収益試算値",
     "収益価格」ではありません",
-    "Issue #21 open",
-    "実務検証済みとは表記しません",
     "補完しません",
 ]
 
@@ -123,6 +121,44 @@ def test_skill_md_has_disclaimer():
     skill_md = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
     for phrase in REQUIRED_DISCLAIMER_PHRASES:
         assert phrase in skill_md, f"SKILL.md に必須フレーズがありません: {phrase!r}"
+
+
+def test_skill_md_issue21_open_and_ongoing():
+    """Issue #21 への言及と、テンプレート多様性の検証が継続中であることが読み取れる。
+
+    「Issue #21 open」等の完全一致文字列に依存すると、正本の言い回しが変わる
+    たびにテストが壊れる。Issue番号への言及（"Issue #21" / "#21"）と、継続中
+    であることを示す語（"継続"）が同一行に共起していることだけを確認し、
+    表記揺れへの耐性を持たせる。
+    """
+    skill_md = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
+    issue21_lines = [
+        line for line in skill_md.splitlines()
+        if "Issue #21" in line or "#21" in line
+    ]
+    assert issue21_lines, "SKILL.md に Issue #21 への言及が見つかりません"
+    assert any("継続" in line for line in issue21_lines), (
+        "Issue #21 について、検証継続中であることを示す記述が見つかりません:\n"
+        + "\n".join(issue21_lines)
+    )
+
+
+def test_skill_md_no_affirmative_verified_claim():
+    """「実務検証済み」等の断定表現は、禁止語としての言及以外に現れない。
+
+    肯定文脈（例:「実務検証済みです」）で使われていないかを、否定・禁止を
+    示す語（表記しません／と表記すること／とは表記）との共起で確認する。
+    """
+    skill_md = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
+    negation_markers = ("表記しません", "と表記すること", "とは表記")
+    violations = [
+        line.strip() for line in skill_md.splitlines()
+        if "実務検証済み" in line and not any(neg in line for neg in negation_markers)
+    ]
+    assert not violations, (
+        "「実務検証済み」が禁止語としてではなく断定的に使われています:\n"
+        + "\n".join(violations)
+    )
 
 
 # ---------------------------------------------------------------------------
