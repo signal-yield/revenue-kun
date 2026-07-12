@@ -60,10 +60,6 @@ th:nth-child(2), td:nth-child(2) {
   text-align: left;
 }
 
-.optional-income-row {
-  margin: 0.4rem 0;
-}
-
 #missing-list .severity-error {
   color: #b00020;
   font-weight: bold;

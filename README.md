@@ -1,4 +1,4 @@
-# revenue-kun（収益還元クン） v0.5.1
+# revenue-kun（収益還元クン） v0.5.2
 
 **Local-first OSS tool for real estate income-estimation workflows.**
 Rent roll CSV / text-based PDF → direct-capitalization Excel workbook.
@@ -9,12 +9,19 @@ NOI（運営純収益）を算出し、**収益試算値**と感応度分析を�
 オプションで直接還元法 Excel ワークブック（`direct_cap.xlsx`）を生成できます。
 **CLI**（Docker対応）に加えて、ブラウザから使える**ローカルWeb UI**もあります（ホスティング型SaaSではありません）。
 
-> **v0.5.1 — バージョン・ドキュメント整合パッチ（現行版）**  
+> **v0.5.2 — OER版・費用詳細版の独立計算化（現行版）**  
+> `direct_cap.xlsx` の製品境界を再確定しました。revenue-kun のゴールはレントロールを読み取り、`直接還元法_OER` / `直接還元法‗費用詳細版` / `読み取りレントロール` の3シートを生成するところまでです。アプリ（CLI / Local Web UI）は、OER方式と費用詳細方式のどちらを使うかを選ばせず、用途区分・OER・空室損失率・貸倒損失率・個別費用・資本的支出・還元利回りの入力も求めません。これらはExcel出力後に、利用者が必要に応じて各シートへ入力します。  
+> 賃料・共益費・水道代収入・駐車場収入・その他収入といった経常的な付帯収入は、利用者の選択なしで両計算シートのGPIへ自動反映されます（**optional incomeのopt-in/opt-out選択は廃止**）。  
+> `直接還元法‗費用詳細版` は、個別運営費用（管理費・修繕費・損害保険料・固定資産税・水道光熱費・その他運営費用）を入力すると、`直接還元法_OER` から完全に独立してEGI→NOI→純収益→収益試算値まで自算定します（旧バージョンの「経費率の妥当性確認用の参考表示」から変更）。両シートは互いの入力値・計算値・シートを一切参照しません。  
+> `assumptions.yaml` の `optional_income.include_in_gpi` / `columns` 設定は非推奨です。後方互換のため引き続き受理しますが、計算結果には一切影響しません。  
+> 同一ベンダー系テンプレートとみられる非公開の実物件テキストPDF3件について、CLIおよびLocal Web UIからの抽出・Excel生成を確認済みです。テンプレート多様性の検証はIssue #21で継続しています。
+
+> **v0.5.1 — バージョン・ドキュメント整合パッチ**  
 > v0.5.0（Local Web UI MVP）に対する、機能変更を伴わない version / documentation alignment patch です。  
 > 内部 `__version__` と `VERSION` ファイルを公開版（GitHub Release / GitHub Pages LP）と整合させ、README の Docker Web UI 検証状況の記載を実機検証済みの内容に更新しました。  
 > Local Web UI の主要機能（ブラウザからのアップロード・プレビュー・`direct_cap.xlsx` 生成/ダウンロード）は v0.5.0 で追加されたものであり、v0.5.1 での新規追加ではありません。  
 > CLI は引き続き利用可能です。抽出ロジック・計算ロジック・Web UI の挙動・optional income の仕様に変更はありません。  
-> qualifying real-world PDF 評価は未完了（Issue #21 open）。実務検証済みとは表記しません。
+> 同一ベンダー系テンプレートとみられる非公開の実物件テキストPDF3件について、CLIおよびLocal Web UIからの抽出・Excel生成を確認済みです。テンプレート多様性の検証はIssue #21で継続しています。
 
 > **v0.5.0 — Local Web UI MVP**  
 > ブラウザから使えるローカルWeb UI（アップロード・プレビュー・`direct_cap.xlsx` 生成/ダウンロード）を追加。  
@@ -64,9 +71,10 @@ NOI（運営純収益）を算出し、**収益試算値**と感応度分析を�
 | Text-based PDF input | ✅ Implemented |
 | Rent-roll preview (Web UI) | ✅ Implemented |
 | Missing-information preview (Web UI) | ✅ Implemented |
-| Optional-income preview (water / parking / other income) | ✅ Implemented |
-| Optional-income explicit opt-in for GPI inclusion | ✅ Implemented |
-| `direct_cap.xlsx` workbook generation | ✅ Implemented |
+| Recurring-income preview (water / parking / other income) | ✅ Implemented |
+| Recurring income auto-included in GPI (no selection needed) | ✅ Implemented (v0.5.2) |
+| `direct_cap.xlsx` workbook generation (OER + expense-detail sheets, always both) | ✅ Implemented |
+| Independent OER / expense-detail calculation sheets | ✅ Implemented (v0.5.2) |
 | Workbook download (Web UI, via `/api/generate`) | ✅ Implemented |
 
 See [Supported / unsupported inputs](#supported--unsupported-inputs) and [Roadmap](#roadmap) below for what is out of scope today.
@@ -116,12 +124,12 @@ python src/main.py --assumptions assumptions.sample.yaml --rent-roll-pdf data/sa
 
 対応入力は CSV とテキスト抽出可能な PDF のみです。スキャン PDF・スマホ撮影・OCR には対応していません。ホスティング型 SaaS としては提供していません。
 
-## Optional income (water / parking / other income)
+## Recurring income (rent / common fee / water / parking / other income)
 
-- 水道代収入・駐車場収入・その他収入（water income / parking income / other income）は、抽出された場合、プレビューおよび読み取りレントロールシートに表示されます。
-- **デフォルトでは GPI（潜在総収入）に算入されません。**
-- **明示的に選択したカテゴリのみ** GPI に算入されます。自動的な算入はありません。
-- この挙動は CLI（`assumptions.yaml` の `optional_income.include_in_gpi` / `columns`）と Web UI（optional-income チェックボックス）の両方で共通です。
+- 賃料・共益費・水道代収入・駐車場収入・その他収入（water income / parking income / other income）は、抽出されると読み取りレントロールシートに表示され、**両計算シート（`直接還元法_OER` / `直接還元法‗費用詳細版`）のGPIへ利用者の選択なしで自動反映されます。**
+- CLI・Web UIともに、この収入をGPIへ算入するかどうかを選択する仕組みはありません（v0.5.2で選択UIを廃止）。
+- 敷金・保証金・預り金、月計・年計・合計行等の非収入項目は、いずれの計算シートにも算入されません。
+- `assumptions.yaml` の `optional_income.include_in_gpi` / `columns` は非推奨（deprecated）です。後方互換のため引き続き受理しますが、値に関わらず計算結果は変わりません。
 
 ## Workbook output
 
@@ -161,11 +169,11 @@ The synthetic sample used to produce them is [`examples/synthetic_rent_roll.pdf`
 
 - CLI
 - Docker-ready CLI
-- Local Web UI MVP（プレビュー・optional income選択・Excel生成/ダウンロード、v0.5.0で追加）
+- Local Web UI MVP（プレビュー・Excel生成/ダウンロード、v0.5.0で追加）
 - CSV / text-based PDF input
-- Excel workbook output
-- Optional-income explicit opt-in
+- Excel workbook output（OER版・費用詳細版を同時生成）
 - `Dockerfile.web` build/run verification in a working Docker daemon environment（Docker Desktop環境で確認済み、v0.5.1）
+- 経常的な付帯収入の自動算入、OER版・費用詳細版の独立計算化（v0.5.2、旧optional income選択UIを廃止）
 
 **Future / not yet implemented**
 
@@ -447,28 +455,32 @@ python src/main.py --assumptions assumptions.sample.yaml --rent-roll-pdf data/sa
 - `--dry-run` と同時に指定した場合、Excel ワークブックは生成されません。
 - 出力先の親ディレクトリが存在しない場合は自動的に作成します。
 
-### ワークブックのシート構成
+### ワークブックのシート構成（v0.5.2）
 
-生成されるワークブックは3シートで構成されます。
+生成されるワークブックは常に3シートで構成されます。**`直接還元法_OER` と `直接還元法‗費用詳細版` は同時に出力され、アプリ側ではどちらを使うか選択しません。** 費用の把握状況や試算目的に応じて、OER版・費用詳細版・または両方を、Excelを受け取った利用者が使い分けます。
 
 | シート名 | 内容 |
 |----------|------|
-| `直接還元法_OER` | 直接還元法の収益試算サマリー。年額収入（E5:E9）は `読み取りレントロール` を自動参照。仮定値（E13:E17）を入力すると EGI→NOI→収益試算値（E20:E24）を自動計算 |
-| `直接還元法‗費用詳細版` | 費用明細の手入力シート（管理費・修繕費・損害保険料・固定資産税等）。経費率の妥当性確認用で NOI には連動しない |
+| `直接還元法_OER` | 個別の運営費用明細が不明な場合の簡便法。年額収入（E5:E9）は `読み取りレントロール` を自動参照。仮定値（E13:E17、採用OERを含む）を入力すると EGI→NOI→収益試算値（E20:E24）を自動計算 |
+| `直接還元法‗費用詳細版` | 個別費用が判明している場合の積み上げ方式。年額収入（E5:E9）は `読み取りレントロール` を独自に自動参照（OER版とは別の参照）。仮定値・個別費用明細（E13:E24）を入力すると EGI→NOI→収益試算値（E28:E31）を自動計算 |
 | `読み取りレントロール` | 抽出したレントロール行（1区画1行）、月計・年計の集計行を含む |
+
+**両シートは完全に独立しています。** 一方の入力値・計算値（空室損失率・貸倒損失率・OER・個別費用・運営費用・NOI・資本的支出・還元対象純収益・還元利回り・収益試算値）を、もう一方のシートが参照することは一切ありません。許可される参照は「読み取りレントロール → 直接還元法_OER」「読み取りレントロール → 直接還元法‗費用詳細版」の2本だけです。
+
+**アプリは前提条件を一切入力しません。** 用途区分・OER・空室損失率・貸倒損失率・個別費用・資本的支出・還元利回りは、CLI・Web UIのいずれからも収集されません。これらはすべてExcel出力後、利用者がそれぞれのシートへ直接入力します。
 
 ### 直接還元法_OER シートのセル構成
 
-#### 収入連携セル（自動参照）
+#### 収入連携セル（自動参照・自動算入）
 
-以下のセルは `読み取りレントロール` シートの年計行を自動参照します。
+以下のセルは `読み取りレントロール` シートの年計行を自動参照します。賃料・共益費・水道代収入・駐車場収入・その他収入は、いずれも利用者の選択なしで自動算入されます（v0.5.2でopt-in/opt-out選択を廃止）。
 年額変換（×12）は `読み取りレントロール` 側で実施済みのため、OER シートでの二重乗算はありません。
 
 | セル | ラベル |
 |------|--------|
 | E5 | 貸室賃料収入（年額） |
 | E6 | 共益費収入（年額） |
-| E7 | 水道光熱費収入（年額） |
+| E7 | 水道代収入（年額） |
 | E8 | 駐車場収入（年額） |
 | E9 | その他収入（年額） |
 | E10 | GPI 合計（`=SUM(E5:E9)`） |
@@ -479,7 +491,7 @@ python src/main.py --assumptions assumptions.sample.yaml --rent-roll-pdf data/sa
 |------|--------|
 | E13 | 空室損失率 |
 | E14 | 貸倒損失率 |
-| E15 | 経費率（運営費用率） |
+| E15 | 採用OER（運営費用 ÷ EGI） |
 | E16 | 資本的支出（年額） |
 | E17 | 還元利回り |
 
@@ -488,20 +500,49 @@ python src/main.py --assumptions assumptions.sample.yaml --rent-roll-pdf data/sa
 | セル | 式 | 内容 |
 |------|----|------|
 | E20 | `=E10*(1-N(E13)-N(E14))` | EGI（有効総収入） |
-| E21 | `=E20*N(E15)` | 運営費用（EGI × 経費率） |
+| E21 | `=E20*N(E15)` | 運営費用（EGI × 採用OER） |
 | E22 | `=E20-E21` | NOI（運営純収益） |
 | E23 | `=E22-N(E16)` | 純収益（資本的支出控除後） |
 | E24 | `=IFERROR(E23/E17,"")` | **収益試算値**（還元利回りが空欄の間は空白） |
 
 > `N()` 関数により、入力前（空欄）のセルは 0 として扱われます。
 > 収益試算値（E24）は鑑定評価による収益価格ではありません。
+> 本シートは `直接還元法‗費用詳細版` の入力値・計算値を一切参照しません。
+
+### 直接還元法‗費用詳細版 シートのセル構成（v0.5.2で独立計算化）
+
+収入ブロック（E5:E10）は OER版と同じ構成ですが、`読み取りレントロール` への参照は OER版とは別の独自の数式です。
+
+| セル | ラベル |
+|------|--------|
+| E13 | 空室損失率 |
+| E14 | 貸倒損失率 |
+| E15 | 資本的支出（年額） |
+| E16 | 還元利回り |
+| E19 | 管理費・管理委託費 |
+| E20 | 修繕費 |
+| E21 | 損害保険料 |
+| E22 | 固定資産税・都市計画税 |
+| E23 | 水道光熱費 |
+| E24 | その他運営費用 |
+| E25 | 運営費用合計（`=SUM(E19:E24)`） |
+
+| セル | 式 | 内容 |
+|------|----|------|
+| E28 | `=E10*(1-N(E13)-N(E14))` | EGI（有効総収入） |
+| E29 | `=E28-E25` | NOI（運営純収益。個別費用の積み上げから算出） |
+| E30 | `=E29-N(E15)` | 純収益（資本的支出控除後） |
+| E31 | `=IFERROR(E30/E16,"")` | **収益試算値**（還元利回りが空欄の間は空白） |
+
+> 本シートはOERを使用しません。費用の全項目が判明していることは利用条件ではなく、判明した項目のみ入力してください。
+> 本シートは `直接還元法_OER` の入力値・計算値を一切参照しません。
 
 ### 想定するワークフロー
 
-1. `--excel-output` で収益試算のたたき台 `.xlsx` を生成します。
+1. `--excel-output` で収益試算のたたき台 `.xlsx` を生成します（OER版・費用詳細版とも同時に出力されます）。
 2. `読み取りレントロール` シートで抽出値を確認します。空室区画の想定賃料等は備考欄（`ユーザーが賃料等を入力可能`）を参考に手入力します。
-3. `直接還元法‗費用詳細版` シートで費用の詳細を入力します。
-4. `直接還元法_OER` シートで仮定値を入力し、収益試算値を確認します。
+3. 費用明細が不明な場合は `直接還元法_OER` シートで空室損失率・貸倒損失率・採用OER・資本的支出・還元利回りを入力します。
+4. 個別費用が判明している場合は `直接還元法‗費用詳細版` シートで空室損失率・貸倒損失率・個別費用・資本的支出・還元利回りを入力します。両シートのどちらか一方でも、両方でも構いません。
 5. 正式な判断は不動産鑑定士・税理士・弁護士等の専門家に確認してください。
 
 ### Excel ワークブック出力の制限事項
@@ -509,7 +550,7 @@ python src/main.py --assumptions assumptions.sample.yaml --rent-roll-pdf data/sa
 | 項目 | 状態 |
 |------|------|
 | OCR・スキャン PDF | 対象外 |
-| qualifying real-world PDF の評価 | 未完了（Issue #21 open）。実務検証済みとは表記しません |
+| qualifying real-world PDF の評価 | 同一ベンダー系テンプレートとみられる非公開の実物件テキストPDF3件でCLI・Local Web UIからの抽出・Excel生成を確認済み。テンプレート多様性の検証はIssue #21で継続中 |
 | 空室区画の賃料推測補完 | 実施しません。空欄はユーザーが手入力します |
 | 鑑定評価 | 対象外。出力は「収益試算値」であり「収益価格」ではありません |
 | 投資助言・法律助言・税務助言 | 対象外 |
@@ -527,7 +568,7 @@ clone もターミナルも不要で、レントロール PDF をアップロー
 | `skill/SKILL.md` | Skill エントリポイント（トリガー・免責・入出力定義） |
 | `build_skill.py` | `src/` → `skill/scripts/` 同期スクリプト |
 
-> qualifying real-world PDF 評価は未完了（Issue #21 open）。実務検証済みとは表記しません。
+> 同一ベンダー系テンプレートとみられる非公開の実物件テキストPDF3件について、CLIおよびLocal Web UIからの抽出・Excel生成を確認済みです。テンプレート多様性の検証はIssue #21で継続しています。
 > Claude Skill マーケットプレイスへの公開は未定。Claude Skill リリース済みとは表記しません。
 
 ---
@@ -629,7 +670,7 @@ python -m pytest -q
 Python 環境を構築せずに、Docker で再現可能な CLI 実行環境を使えます。
 
 > OCR・スキャン PDF・スマホ撮影対応は Docker イメージに含まれません（今後の検討対象）。
-> qualifying real-world PDF 評価は未完了（Issue #21 open）。実務検証済みとは表記しません。
+> 同一ベンダー系テンプレートとみられる非公開の実物件テキストPDF3件について、CLIおよびLocal Web UIからの抽出・Excel生成を確認済みです。テンプレート多様性の検証はIssue #21で継続しています。
 
 ### ビルド
 
@@ -762,10 +803,9 @@ docker run --rm -p 127.0.0.1:8000:8000 revenue-kun-web
 ### 使い方の流れ
 
 1. `http://127.0.0.1:8000/` を開き、CSVまたはテキスト抽出可能なPDFを選択する
-2. 「Preview」でレントロールの抽出結果・欠損情報・付帯収入（水道代・駐車場・その他収入）の抽出状況を確認する
-3. GPIに含めたい付帯収入があれば、該当するチェックボックスを選択する（デフォルトはすべて未選択＝GPI非算入）
-4. 「Generate Excel」で `direct_cap.xlsx` をダウンロードする
-5. ダウンロードしたExcelの `直接還元法_OER` シートで、空室損失率・還元利回り等の前提条件を入力する
+2. 「Preview」でレントロールの抽出結果・欠損情報・付帯収入（水道代・駐車場・その他収入）の抽出状況と、算入後のGPI（潜在総収入）年額を確認する（**v0.5.2: 付帯収入は総収入へ自動算入され、選択の必要はありません**）
+3. 「Generate Excel」で `direct_cap.xlsx` をダウンロードする
+4. ダウンロードしたExcelの `直接還元法_OER` シート、または `直接還元法‗費用詳細版` シートで、空室損失率・OER（または個別費用）・還元利回り等の前提条件を入力する（Web UIではこれらの入力を求めません）
 
 ### 現時点の制限
 
@@ -886,6 +926,6 @@ NOI（運営純収益）   = EGI − 運営費用合計
 
 ## バージョン・ライセンス
 
-**v0.5.1** — Apache License 2.0（Copyright 2026 km）
+**v0.5.2** — Apache License 2.0（Copyright 2026 km）
 
 変更履歴は [CHANGELOG.md](CHANGELOG.md) を参照してください。

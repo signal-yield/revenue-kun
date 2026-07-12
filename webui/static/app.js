@@ -4,11 +4,16 @@
  *
  * Scope: file selection, calling the existing POST /api/preview and
  * POST /api/generate endpoints, and rendering their responses. This file
- * must not parse CSV/PDF, compute missing information, decide
- * optional-income GPI inclusion, or perform any NOI/valuation/Excel-formula
- * calculation -- all of that stays in src/revenue_kun/ and is reused by
- * webui/preview.py and webui/generate.py on the server. See Issue #78 for
- * the approved architecture decision.
+ * must not parse CSV/PDF, compute missing information, or perform any
+ * NOI/valuation/Excel-formula calculation -- all of that stays in
+ * src/revenue_kun/ and is reused by webui/preview.py and webui/generate.py
+ * on the server. See Issue #78 for the approved architecture decision.
+ *
+ * v0.5.2 product boundary: this file does not collect an optional-income
+ * selection, a use-type, an OER, expense amounts, or a cap rate -- none of
+ * that is asked for in the Web UI. Recurring income (water/parking/other
+ * income) is shown read-only; it is always auto-included in both
+ * calculation sheets on the server.
  *
  * Stateless: the same browser-selected File used for preview is resent,
  * unmodified, to /api/generate -- nothing is kept server-side between the
@@ -26,6 +31,7 @@
   var rowsTableBody = document.querySelector("#rows-table tbody");
   var missingList = document.getElementById("missing-list");
   var optionalIncomeBox = document.getElementById("optional-income-box");
+  var gpiAnnualBox = document.getElementById("gpi-annual-box");
 
   var OPTIONAL_INCOME_LABELS = {
     water_income: "水道代収入",
@@ -60,6 +66,7 @@
     clearChildren(rowsTableBody);
     clearChildren(missingList);
     clearChildren(optionalIncomeBox);
+    clearChildren(gpiAnnualBox);
     hide(resultsBox);
     clearChildren(errorBox);
     hide(errorBox);
@@ -149,57 +156,60 @@
     });
   }
 
+  // v0.5.2: read-only display only -- no checkboxes, no selection state.
+  // Recurring income is always auto-included in both calculation sheets on
+  // the server; this table exists purely to show the user what was
+  // extracted and what it adds up to before they download the workbook.
   function renderOptionalIncome(optionalIncome) {
     clearChildren(optionalIncomeBox);
     optionalIncome = optionalIncome || {};
-    Object.keys(OPTIONAL_INCOME_LABELS).forEach(function (key) {
-      var entry = optionalIncome[key] || { present: false, total: 0 };
 
-      var wrapper = document.createElement("div");
-      wrapper.className = "optional-income-row";
-
-      var label = document.createElement("label");
-
-      var checkbox = document.createElement("input");
-      checkbox.type = "checkbox";
-      checkbox.checked = false; // always unchecked by default, regardless of extracted data
-      checkbox.disabled = !entry.present;
-      checkbox.className = "optional-income-checkbox";
-      checkbox.setAttribute("data-optional-income-key", key);
-
-      label.appendChild(checkbox);
-
-      var text = document.createElement("span");
-      text.textContent =
-        " " + OPTIONAL_INCOME_LABELS[key] +
-        "（抽出: " + (entry.present ? "あり" : "なし") +
-        " / 合計: " + formatAmount(entry.total) + " 円）";
-      label.appendChild(text);
-
-      wrapper.appendChild(label);
-      optionalIncomeBox.appendChild(wrapper);
+    var table = document.createElement("table");
+    var thead = document.createElement("thead");
+    var headRow = document.createElement("tr");
+    ["項目", "抽出", "月額合計", "年額合計", "GPI算入"].forEach(function (label) {
+      var th = document.createElement("th");
+      th.textContent = label;
+      headRow.appendChild(th);
     });
+    thead.appendChild(headRow);
+    table.appendChild(thead);
+
+    var tbody = document.createElement("tbody");
+    Object.keys(OPTIONAL_INCOME_LABELS).forEach(function (key) {
+      var entry = optionalIncome[key] || { present: false, monthly_total: 0, annual_total: 0 };
+      var tr = document.createElement("tr");
+      var values = [
+        OPTIONAL_INCOME_LABELS[key],
+        entry.present ? "あり" : "なし",
+        formatAmount(entry.monthly_total) + " 円",
+        formatAmount(entry.annual_total) + " 円",
+        "算入されます",
+      ];
+      values.forEach(function (value) {
+        var td = document.createElement("td");
+        td.textContent = value;
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    optionalIncomeBox.appendChild(table);
   }
 
-  // Exposed for a future #82 generate action; reading the current
-  // selections here does not decide GPI inclusion by itself.
-  function getSelectedOptionalIncomeKeys() {
-    var checkboxes = optionalIncomeBox.querySelectorAll(".optional-income-checkbox");
-    var keys = [];
-    for (var i = 0; i < checkboxes.length; i += 1) {
-      if (checkboxes[i].checked) {
-        keys.push(checkboxes[i].getAttribute("data-optional-income-key"));
-      }
-    }
-    return keys;
+  function renderGpiAnnual(gpiAnnual) {
+    clearChildren(gpiAnnualBox);
+    var p = document.createElement("p");
+    p.textContent = "算入後のGPI（潜在総収入・年額）: " + formatAmount(gpiAnnual) + " 円";
+    gpiAnnualBox.appendChild(p);
   }
-  window.revenueKunGetSelectedOptionalIncomeKeys = getSelectedOptionalIncomeKeys;
 
   function renderPreview(data) {
     renderSummary(data);
     renderRows(data.rows);
     renderMissing(data.missing);
     renderOptionalIncome(data.optional_income);
+    renderGpiAnnual(data.gpi_annual);
     show(resultsBox);
     // A successful preview is the only thing that enables Excel generation.
     generateButton.disabled = false;
@@ -277,11 +287,9 @@
     var formData = new FormData();
     // The same browser-selected File used for preview is resent here,
     // unmodified -- the server re-extracts it from scratch and does not
-    // reuse anything from the earlier /api/preview call.
+    // reuse anything from the earlier /api/preview call. Recurring income
+    // is always auto-included server-side; there is no selection to send.
     formData.append("file", selectedFile);
-    getSelectedOptionalIncomeKeys().forEach(function (key) {
-      formData.append("optional_income", key);
-    });
 
     fetch("/api/generate", { method: "POST", body: formData })
       .then(function (response) {

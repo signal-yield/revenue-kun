@@ -1,5 +1,41 @@
 # CHANGELOG
 
+## [v0.5.2] — 2026-07-12
+
+Product boundary re-confirmed: revenue-kun's job ends at generating the 3-sheet
+`direct_cap.xlsx` workbook. The app never asks the user to choose between the
+OER sheet and the expense-detail sheet, and never collects 用途区分 / OER /
+空室損失率 / 貸倒損失率 / 個別費用 / 資本的支出 / 還元利回り in the CLI or
+Web UI — all of that is entered by the user directly in Excel after
+generation.
+
+- Recurring income (rent, common fee, water, parking, other income) is now
+  always auto-included in GPI on both calculation sheets. The opt-in/opt-out
+  selection UI (Web UI checkboxes) and CLI/Web UI selection behavior have
+  been removed.
+- `直接還元法‗費用詳細版` is now an independent, self-computing sheet: it
+  derives its own income block directly from `読み取りレントロール`, and
+  computes EGI → NOI → 純収益 → 収益試算値 from user-entered individual
+  expense line items (管理費・修繕費・損害保険料・固定資産税・水道光熱費・
+  その他運営費用), fully independently of the OER sheet.
+- `直接還元法_OER`'s former cross-reference to the expense-detail sheet
+  (E27/E28, "reference only" cross-check) has been removed. Neither
+  calculation sheet references the other sheet's input values, expense
+  totals, NOI, or 収益試算値 in any way — the only cross-sheet reference
+  either sheet makes is to `読み取りレントロール`'s income block.
+- The OER sheet's 経費率 input cell is now labeled 採用OER（運営費用 ÷ EGI）
+  for clarity; the formula (運営費用 = EGI × 採用OER) is unchanged.
+- The Web UI's optional-income checkboxes have been replaced with a
+  read-only display (item, extracted or not, monthly total, annual total,
+  and confirmation that it is included in GPI), plus a new GPI (potential
+  gross income) annual total display.
+- `assumptions.yaml`'s `optional_income.include_in_gpi` / `columns` and the
+  Web UI's legacy `optional_income` form field are still accepted for
+  backward compatibility, but no longer have any effect on calculated
+  results.
+- No changes to rent-roll extraction, missing-value handling, or the
+  `読み取りレントロール` sheet's structure.
+
 ## [v0.5.1] — 2026-07-11
 
 - Align internal version metadata (`src/revenue_kun/__init__.py`, `VERSION`) with the published release line.

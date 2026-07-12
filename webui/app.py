@@ -8,14 +8,21 @@ approved architecture decision.
 Scope so far:
   - Issue #79: root page and a health endpoint.
   - Issue #80: `POST /api/preview` -- CSV/PDF preview only, no Excel
-    generation, no optional-income opt-in UI.
-  - Issue #81: browser preview UI (`webui/static/app.js`) and
-    optional-income checkboxes (display/opt-in only, no
-    `OptionalIncomeConfig`, no GPI decision).
+    generation.
+  - Issue #81: browser preview UI (`webui/static/app.js`), showing
+    recurring income (including 水道代/駐車場/その他収入) as read-only
+    information -- no selection UI (removed in v0.5.2; see below).
   - Issue #82: `POST /api/generate` -- stateless workbook generation and
-    download. The browser resends the same selected file plus its
-    explicit optional-income selections; nothing is retained server-side
-    between `/api/preview` and `/api/generate`.
+    download. The browser resends the same selected file; nothing is
+    retained server-side between `/api/preview` and `/api/generate`.
+
+v0.5.2 product boundary: the Web UI never asks the user to choose between
+the OER sheet and the expense-detail sheet, and never collects 用途区分,
+OER, 空室損失率, 貸倒損失率, 個別費用, 資本的支出, or 還元利回り. All of
+that is left for the user to fill in directly in the generated Excel file.
+Recurring income extracted from the upload (賃料/共益費/水道代収入/駐車場
+収入/その他収入) is always reflected in both calculation sheets; there is
+no opt-in/opt-out selection.
 """
 from __future__ import annotations
 
@@ -106,11 +113,15 @@ def generate(
 
     Stateless: the browser resends the same file it already sent to
     `/api/preview` (this endpoint re-extracts it from scratch -- nothing
-    from a prior `/api/preview` call is reused server-side). Only the
-    explicitly selected ``optional_income`` categories are included in
-    GPI; none are assumed. On success, the response is the workbook bytes
-    (not JSON); on a handled failure, the response is the same
-    ``{"ok": false, "error": {...}}`` shape used by `/api/preview`.
+    from a prior `/api/preview` call is reused server-side).
+
+    v0.5.2: recurring income (water/parking/other income) is always
+    auto-included in both calculation sheets. The ``optional_income`` form
+    field is still accepted for backward compatibility with older frontend
+    code, but it has no effect -- nothing is read from it. On success, the
+    response is the workbook bytes (not JSON); on a handled failure, the
+    response is the same ``{"ok": false, "error": {...}}`` shape used by
+    `/api/preview`.
     """
     try:
         data = generate_workbook(file.filename, file.file, optional_income)

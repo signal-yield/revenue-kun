@@ -309,13 +309,13 @@ class TestPdfExtraction:
 # ---------------------------------------------------------------------------
 
 class TestExcelOutput:
-    """「表示」と「GPI算入」の分離を検証する。
+    """v0.5.2: direct_cap.xlsx の付帯収入は常に両計算シートへ自動算入される。
 
     設計:
-      - from_rent_roll_unit: 抽出値を常に DirectCapRow に格納（opt-in/out 不問）
-      - write_direct_cap_workbook(oi_config=...): OER の E7-E9 を条件分岐
-        - opt-out: =0 ＋「（算入対象外）」ラベル → 読み取りレントロール列は表示維持
-        - opt-in: cross-sheet ref → GPI に算入
+      - from_rent_roll_unit: 抽出値を常に DirectCapRow に格納
+      - write_direct_cap_workbook(oi_config=...): oi_config は後方互換のため
+        受理するのみで、値には一切影響しない。E7-E9 は常に読み取りレントロール
+        へのクロスシート参照になる（opt-in/opt-out という概念自体が廃止された）。
     """
 
     def _make_unit_with_water(self, water: float | None = 37_295) -> RentRollUnit:
@@ -383,67 +383,71 @@ class TestExcelOutput:
         from openpyxl import load_workbook
         return load_workbook(path)
 
-    def test_workbook_optout_oer_water_is_zero(self, tmp_path):
-        """opt-out 時、OER E7（水道代収入）は =0 で GPI に算入しない。"""
-        from revenue_kun.excel_output import SHEET_OER
-        oi = OptionalIncomeConfig(include_in_gpi=False)
-        p = self._build_workbook(tmp_path, water=37_295, oi_config=oi)
-        oer_ws = self._load_wb(p)[SHEET_OER]
-        assert oer_ws["E7"].value == "=0", (
-            f"opt-out 時 E7 は =0 であるべき, got: {oer_ws['E7'].value!r}"
-        )
+    def test_workbook_water_oer_always_references_rent_roll_regardless_of_config(self, tmp_path):
+        """v0.5.2: oi_config に関わらず、OER E7（水道代収入）は常にクロスシート参照。"""
+        from revenue_kun.excel_output import SHEET_OER, SHEET_RENT_ROLL
+        for oi in (
+            None,
+            OptionalIncomeConfig(include_in_gpi=False),
+            OptionalIncomeConfig(include_in_gpi=True, columns=["water"]),
+            OptionalIncomeConfig(include_in_gpi=True, columns=["parking"]),
+        ):
+            p = self._build_workbook(tmp_path, water=37_295, oi_config=oi)
+            oer_ws = self._load_wb(p)[SHEET_OER]
+            formula = oer_ws["E7"].value or ""
+            assert formula != "=0", f"E7 must never be =0 (config={oi!r}), got: {formula!r}"
+            assert SHEET_RENT_ROLL in formula
 
-    def test_workbook_optout_rent_roll_shows_water(self, tmp_path):
-        """opt-out 時でも 読み取りレントロール には水道代収入が表示される。"""
+    def test_workbook_rent_roll_shows_water(self, tmp_path):
+        """読み取りレントロール には水道代収入が常に表示される。"""
         from revenue_kun.excel_output import SHEET_RENT_ROLL, _C_UTIL
         oi = OptionalIncomeConfig(include_in_gpi=False)
         p = self._build_workbook(tmp_path, water=37_295, oi_config=oi)
         rr_ws = self._load_wb(p)[SHEET_RENT_ROLL]
-        # データ行 (row 2) に水道代収入 = 37295 が表示されている
-        assert rr_ws.cell(2, _C_UTIL).value == 37_295, (
-            "opt-out 時でも 読み取りレントロール 水道代収入列に値が表示されるべき"
-        )
+        assert rr_ws.cell(2, _C_UTIL).value == 37_295
 
-    def test_workbook_optout_label_contains_excluded(self, tmp_path):
-        """opt-out 時の OER 付帯収入行ラベルに「算入対象外」が含まれる。"""
+    def test_workbook_label_never_contains_excluded(self, tmp_path):
+        """v0.5.2: OER 付帯収入行ラベルに「算入対象外」は付与されない。"""
         from revenue_kun.excel_output import SHEET_OER
         oi = OptionalIncomeConfig(include_in_gpi=False)
         p = self._build_workbook(tmp_path, water=37_295, oi_config=oi)
         oer_ws = self._load_wb(p)[SHEET_OER]
         label = oer_ws.cell(7, 4).value or ""
-        assert "算入対象外" in label, (
-            f"opt-out 時 D7 に '算入対象外' が含まれるべき, got: {label!r}"
-        )
+        assert "算入対象外" not in label, f"D7 should not contain '算入対象外', got: {label!r}"
 
-    def test_workbook_optin_water_oer_references_rent_roll(self, tmp_path):
-        """opt-in 時、OER E7 は 読み取りレントロール annual row を参照する。"""
+    def test_workbook_parking_also_always_references_rent_roll(self, tmp_path):
+        """water のみを指す旧 columns=["water"] を渡しても、E8（駐車場収入）も常にクロスシート参照。"""
         from revenue_kun.excel_output import SHEET_OER, SHEET_RENT_ROLL
         oi = OptionalIncomeConfig(include_in_gpi=True, columns=["water"])
         p = self._build_workbook(tmp_path, water=37_295, oi_config=oi)
         oer_ws = self._load_wb(p)[SHEET_OER]
-        formula = oer_ws["E7"].value or ""
-        assert SHEET_RENT_ROLL in formula, (
-            f"opt-in 時 E7 は 読み取りレントロール を参照するべき, got: {formula!r}"
-        )
-        assert formula != "=0", "opt-in 時 E7 が =0 になっている"
+        formula = oer_ws["E8"].value or ""
+        assert formula != "=0", f"E8 must never be =0, got: {formula!r}"
+        assert SHEET_RENT_ROLL in formula
 
-    def test_workbook_optin_parking_not_in_columns_is_zero(self, tmp_path):
-        """water のみ opt-in 時、E8 (駐車場収入) は =0 のまま。"""
-        from revenue_kun.excel_output import SHEET_OER
-        oi = OptionalIncomeConfig(include_in_gpi=True, columns=["water"])
-        p = self._build_workbook(tmp_path, water=37_295, oi_config=oi)
-        oer_ws = self._load_wb(p)[SHEET_OER]
-        assert oer_ws["E8"].value == "=0", (
-            f"water のみ opt-in 時 E8 は =0 であるべき, got: {oer_ws['E8'].value!r}"
-        )
-
-    def test_workbook_optout_gpi_formula_sums_e5_to_e9(self, tmp_path):
-        """GPI (E10) は常に =SUM(E5:E9)。opt-out 時は E7-E9=0 なので GPI = rent+cam。"""
+    def test_workbook_gpi_formula_sums_e5_to_e9(self, tmp_path):
+        """GPI (E10) は常に =SUM(E5:E9)。"""
         from revenue_kun.excel_output import SHEET_OER
         oi = OptionalIncomeConfig(include_in_gpi=False)
         p = self._build_workbook(tmp_path, water=37_295, oi_config=oi)
         oer_ws = self._load_wb(p)[SHEET_OER]
         assert oer_ws["E10"].value == "=SUM(E5:E9)"
+
+    def test_workbook_none_oi_config_same_gpi_formula_as_legacy_config(self, tmp_path):
+        """oi_config 省略・空リスト・全指定のいずれでも同じ数式になる（後方互換）。"""
+        from revenue_kun.excel_output import SHEET_OER
+        configs = [
+            None,
+            OptionalIncomeConfig(),
+            OptionalIncomeConfig(include_in_gpi=False, columns=[]),
+            OptionalIncomeConfig(include_in_gpi=True, columns=["water", "parking", "other_income"]),
+        ]
+        formulas = []
+        for oi in configs:
+            p = self._build_workbook(tmp_path, water=37_295, oi_config=oi)
+            oer_ws = self._load_wb(p)[SHEET_OER]
+            formulas.append(tuple(oer_ws[ref].value for ref in ("E5", "E6", "E7", "E8", "E9", "E10")))
+        assert len(set(formulas)) == 1, f"All configs should yield identical formulas, got: {formulas!r}"
 
 
 # ---------------------------------------------------------------------------

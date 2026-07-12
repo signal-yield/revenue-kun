@@ -106,10 +106,44 @@ def _missing_to_dict(item: MissingItem) -> dict[str, Any]:
 
 
 def _optional_income_summary(units: list[RentRollUnit], canonical_key: str) -> dict[str, Any]:
+    """Monthly/annual totals for one optional-income category.
+
+    v0.5.2: optional income is always auto-included in GPI (no opt-in/out
+    selection), so this summary also reports that inclusion explicitly —
+    see ``gpi_included`` below.
+    """
     values = [unit.get_optional_income(canonical_key) for unit in units]
     present = any(value is not None for value in values)
-    total = sum(value for value in values if value is not None)
-    return {"present": present, "total": total}
+    monthly_total = sum(value for value in values if value is not None)
+    return {
+        "present": present,
+        "monthly_total": monthly_total,
+        "annual_total": monthly_total * 12,
+        "gpi_included": True,
+    }
+
+
+def _annual_income_total(units: list[RentRollUnit], monthly_values_fn) -> float:
+    """Sum monthly_values_fn(unit) over units (None treated as 0), ×12."""
+    monthly_total = sum(
+        value for value in (monthly_values_fn(u) for u in units) if value is not None
+    )
+    return monthly_total * 12
+
+
+def _compute_gpi_annual(units: list[RentRollUnit]) -> float:
+    """Total annual GPI: rent + common fee + water + parking + other income.
+
+    Mirrors the direct_cap.xlsx income block exactly (賃料+共益費+水道代収入+
+    駐車場収入+その他収入, all auto-included, missing values treated as 0).
+    """
+    return (
+        _annual_income_total(units, lambda u: u.月額賃料_円)
+        + _annual_income_total(units, lambda u: u.月額共益費_円)
+        + _annual_income_total(units, lambda u: u.get_optional_income("water"))
+        + _annual_income_total(units, lambda u: u.get_optional_income("parking"))
+        + _annual_income_total(units, lambda u: u.get_optional_income("other_income"))
+    )
 
 
 def build_preview(
@@ -138,6 +172,7 @@ def build_preview(
             response_key: _optional_income_summary(units, canonical_key)
             for response_key, canonical_key in _OPTIONAL_INCOME_KEYS
         },
+        "gpi_annual": _compute_gpi_annual(units),
         "diagnostics": {"source": input_type},
     }
 

@@ -112,11 +112,12 @@ def test_root_has_generate_button_disabled_before_preview():
     assert "disabled" in response.text
 
 
-def test_root_states_optional_income_excluded_from_gpi_by_default():
+def test_root_states_optional_income_auto_included_in_gpi():
+    """v0.5.2: 付帯収入は選択によらず自動算入される旨を明記する。"""
     client = TestClient(app)
     response = client.get("/")
     assert "GPI" in response.text
-    assert "明示的に選択しない限り" in response.text
+    assert "自動算入" in response.text
 
 
 def test_root_states_missing_values_are_not_inferred():

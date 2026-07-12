@@ -159,17 +159,32 @@ def test_app_js_uses_text_content_for_rendering():
 
 
 # ---------------------------------------------------------------------------
-# Optional-income checkbox defaults (structural guarantee in the JS source)
+# v0.5.2: optional income is read-only (no checkboxes, no selection UI)
 # ---------------------------------------------------------------------------
 
-def test_app_js_forces_checkboxes_unchecked_by_default():
-    source = _read_app_js()
-    assert "checkbox.checked = false" in source
+def test_app_js_has_no_checkbox_for_optional_income():
+    source = _read_app_js_code_only()
+    assert "type = \"checkbox\"" not in source
+    assert "optional-income-checkbox" not in source
 
 
-def test_app_js_disables_checkbox_when_not_present():
-    source = _read_app_js()
-    assert "checkbox.disabled = !entry.present" in source
+def test_app_js_renders_optional_income_as_read_only_table():
+    source = _read_app_js_code_only()
+    render_fn = re.search(
+        r"function renderOptionalIncome\(optionalIncome\)\s*\{(.*?)\n  \}",
+        source, re.DOTALL,
+    )
+    assert render_fn is not None
+    body = render_fn.group(1)
+    assert "monthly_total" in body
+    assert "annual_total" in body
+    assert "checkbox" not in body
+
+
+def test_app_js_renders_gpi_annual():
+    source = _read_app_js_code_only()
+    assert "renderGpiAnnual" in source
+    assert "gpi_annual" in source in source
 
 
 def test_app_js_resets_state_on_new_file_selection():
@@ -219,11 +234,12 @@ def test_app_js_generate_handler_appends_selected_file():
     assert 'formData.append("file", selectedFile)' in handler
 
 
-def test_app_js_generate_handler_appends_optional_income_selections():
+def test_app_js_generate_handler_does_not_send_optional_income_selection():
+    """v0.5.2: 収入は自動算入のため、選択を送信するコードは存在しない。"""
     source = _read_app_js_code_only()
     handler = _extract_generate_click_handler(source)
-    assert "getSelectedOptionalIncomeKeys()" in handler
-    assert 'formData.append("optional_income", key)' in handler
+    assert "optional_income" not in handler
+    assert "getSelectedOptionalIncomeKeys" not in source
 
 
 def test_app_js_has_blob_download_path():

@@ -6,15 +6,15 @@
   <title>revenue-kun — レントロールPDF/CSVからローカルWeb UIで直接還元法Excelを生成するOSS</title>
   <meta
     name="description"
-    content="revenue-kun v0.5.1は、レントロールCSVまたはテキスト抽出可能なPDFから、ローカルWeb UI（またはDocker対応CLI）で直接還元法の収益試算Excelワークブック（direct_cap.xlsx）を生成するlocal-firstなOSSです。"
+    content="revenue-kun v0.5.2は、レントロールCSVまたはテキスト抽出可能なPDFから、ローカルWeb UI（またはDocker対応CLI）で直接還元法の収益試算Excelワークブック（direct_cap.xlsx）を生成するlocal-firstなOSSです。"
   />
   <meta
     property="og:title"
-    content="revenue-kun v0.5.1 — Version and documentation alignment"
+    content="revenue-kun v0.5.2 — OER版・費用詳細版の独立計算化"
   />
   <meta
     property="og:description"
-    content="レントロールPDF/CSVをローカルWeb UIでpreviewし、optional incomeを明示的に選択したうえでdirect_cap.xlsxを生成・ダウンロード。CLI/Docker対応も継続。"
+    content="レントロールPDF/CSVをローカルWeb UIでpreviewし、経常的な付帯収入を自動算入したうえでdirect_cap.xlsx（OER版・費用詳細版を同時生成）を生成・ダウンロード。CLI/Docker対応も継続。"
   />
   <meta property="og:type" content="website" />
   <link rel="stylesheet" href="style.css" />
@@ -37,7 +37,7 @@
     <div class="hero-badge">
       <span class="badge badge-oss">OSS</span>
       <span class="badge badge-license">Apache 2.0</span>
-      <span class="badge badge-version">v0.5.1</span>
+      <span class="badge badge-version">v0.5.2</span>
     </div>
     <h1 class="hero-headline">
       CSV / テキストPDFから、<br>
@@ -45,11 +45,11 @@
     </h1>
     <p class="hero-sub">
       レントロール（CSVまたはテキスト抽出可能なPDF）をブラウザでアップロードし、
-      抽出結果と付帯収入（optional income）をpreview。<br>
-      明示的に選択した項目だけをGPIに算入し、<code>direct_cap.xlsx</code> を生成・ダウンロードします。
+      抽出結果と付帯収入（水道代・駐車場・その他収入）をpreview。<br>
+      経常的な付帯収入は自動算入され、<code>direct_cap.xlsx</code>（OER版・費用詳細版を同時生成）を生成・ダウンロードします。
       CLI（Docker対応）からも同じロジックで利用できます。
       <span class="hero-sub-en">
-        Local-first OSS: preview a rent roll in your browser, opt in to optional income explicitly, and download a direct-capitalization Excel workbook. Also available as a Docker-ready CLI.
+        Local-first OSS: preview a rent roll in your browser, then download a direct-capitalization Excel workbook with independent OER and expense-detail sheets. Also available as a Docker-ready CLI.
       </span>
     </p>
     <div class="warn-badge">
@@ -58,7 +58,7 @@
     </div>
     <div class="hero-cta">
       <a href="https://github.com/signal-yield/revenue-kun" class="btn btn-primary">GitHub で見る</a>
-      <a href="https://github.com/signal-yield/revenue-kun/releases/tag/v0.5.1" class="btn btn-secondary">Release v0.5.1</a>
+      <a href="https://github.com/signal-yield/revenue-kun/releases/tag/v0.5.2" class="btn btn-secondary">Release v0.5.2</a>
       <a href="#usage" class="btn btn-secondary">使い方を見る</a>
     </div>
   </div>
@@ -123,13 +123,18 @@
         </tr>
         <tr>
           <td>Excel 出力</td>
-          <td><code>--excel-output</code> で3シート .xlsx を生成</td>
+          <td><code>--excel-output</code> でOER版・費用詳細版・読み取りレントロールの3シート .xlsx を同時生成</td>
         </tr>
         <tr>
-          <td>付帯収入（optional income）</td>
+          <td>付帯収入（自動算入）</td>
           <td>
-            水道代収入・駐車場収入・その他収入を読み取りレントロールに表示。
-            GPIには明示的に選択した項目のみ算入します（デフォルトはすべて算入対象外）。
+            水道代収入・駐車場収入・その他収入は、経常的な付帯収入として読み取りレントロールに表示され、選択操作なしで両計算シートのGPIへ自動算入されます。
+          </td>
+        </tr>
+        <tr>
+          <td>OER版・費用詳細版の独立性</td>
+          <td>
+            アプリはどちらの方式を使うか選択させません。両シートは互いの入力値・計算値を参照せず、独立してNOI・収益試算値まで算定します。
           </td>
         </tr>
         <tr>
@@ -167,13 +172,12 @@
         <div class="sheet-tab">直接還元法_OER</div>
         <div class="sheet-body">
           <p class="sheet-desc">
-            年額収入セル（E2/E3/E5/E6/E7）が <code>読み取りレントロール</code> の年計行を自動参照。
-            空室損失率・還元利回り等はユーザーが手入力。
+            個別の運営費用明細が不明な場合の簡便法。年額収入セル（E5:E9）が <code>読み取りレントロール</code> の年計行を自動参照。
+            空室損失率・採用OER・還元利回り等はユーザーが手入力。
           </p>
           <p class="sheet-desc">
-            付帯収入は読み取りレントロールには表示されますが、
-            デフォルトではGPIに算入されません。
-            設定で明示的にopt-inした項目だけがOERシートに連携されます。
+            賃料・共益費・水道代収入・駐車場収入・その他収入は、いずれも選択操作なしでGPIへ自動算入されます。
+            本シートは費用詳細版を一切参照せず、独立して収益試算値まで算定します。
           </p>
           <table class="mini-sheet">
             <thead>
@@ -182,13 +186,13 @@
             <tbody>
               <tr><td>貸室賃料収入（年額）</td><td>=読み取りレントロール!…（自動）</td></tr>
               <tr><td>共益費収入（年額）</td><td>=読み取りレントロール!…（自動）</td></tr>
-              <tr><td>水道代収入（算入対象外）</td><td>=0（デフォルト）</td></tr>
-              <tr><td>駐車場収入（算入対象外）</td><td>=0（デフォルト）</td></tr>
-              <tr><td>その他収入（算入対象外）</td><td>=0（デフォルト）</td></tr>
+              <tr><td>水道代収入（年額）</td><td>=読み取りレントロール!…（自動算入）</td></tr>
+              <tr><td>駐車場収入（年額）</td><td>=読み取りレントロール!…（自動算入）</td></tr>
+              <tr><td>その他収入（年額）</td><td>=読み取りレントロール!…（自動算入）</td></tr>
               <tr><td>総収入（年額）</td><td>=SUM(E5:E9)（自動）</td></tr>
               <tr class="user-row"><td>空室損失率</td><td>← 手入力</td></tr>
               <tr class="user-row"><td>貸倒損失率</td><td>← 手入力</td></tr>
-              <tr class="user-row"><td>経費率（運営費用率）</td><td>← 手入力</td></tr>
+              <tr class="user-row"><td>採用OER（運営費用÷EGI）</td><td>← 手入力</td></tr>
               <tr class="user-row"><td>資本的支出（年額）</td><td>← 手入力</td></tr>
               <tr class="user-row"><td>還元利回り</td><td>← 手入力</td></tr>
               <tr><td>EGI / NOI</td><td>=自動計算</td></tr>
@@ -203,19 +207,35 @@
         <div class="sheet-tab">直接還元法‗費用詳細版</div>
         <div class="sheet-body">
           <p class="sheet-desc">
-            管理費・修繕費・損害保険料・固定資産税等をユーザーが手入力する欄。
-            CLI では自動入力されません。
+            個別費用が判明している場合の積み上げ方式。年額収入セル（E5:E9）は本シート独自に <code>読み取りレントロール</code> を自動参照（OER版とは別の参照）。
+            管理費・修繕費・損害保険料・固定資産税・水道光熱費・その他運営費用をユーザーが手入力すると、EGI→NOI→収益試算値まで独立して自動計算されます。
+          </p>
+          <p class="sheet-desc">
+            本シートはOERを使用せず、直接還元法_OER の入力値・計算値を一切参照しません。
           </p>
           <table class="mini-sheet">
             <thead>
-              <tr><th>費目</th><th>年額（円）</th></tr>
+              <tr><th>D列（項目）</th><th>E列（値）</th></tr>
             </thead>
             <tbody>
+              <tr><td>貸室賃料収入（年額）</td><td>=読み取りレントロール!…（自動）</td></tr>
+              <tr><td>共益費収入（年額）</td><td>=読み取りレントロール!…（自動）</td></tr>
+              <tr><td>水道代収入（年額）</td><td>=読み取りレントロール!…（自動算入）</td></tr>
+              <tr><td>駐車場収入（年額）</td><td>=読み取りレントロール!…（自動算入）</td></tr>
+              <tr><td>その他収入（年額）</td><td>=読み取りレントロール!…（自動算入）</td></tr>
+              <tr><td>総収入（年額）</td><td>=SUM(E5:E9)（自動）</td></tr>
+              <tr class="user-row"><td>空室損失率</td><td>← 手入力</td></tr>
+              <tr class="user-row"><td>貸倒損失率</td><td>← 手入力</td></tr>
               <tr class="user-row"><td>管理費・管理委託費</td><td>← 手入力</td></tr>
               <tr class="user-row"><td>修繕費</td><td>← 手入力</td></tr>
               <tr class="user-row"><td>損害保険料</td><td>← 手入力</td></tr>
               <tr class="user-row"><td>固定資産税・都市計画税</td><td>← 手入力</td></tr>
-              <tr class="user-row"><td>その他費用</td><td>← 手入力</td></tr>
+              <tr class="user-row"><td>水道光熱費</td><td>← 手入力</td></tr>
+              <tr class="user-row"><td>その他運営費用</td><td>← 手入力</td></tr>
+              <tr class="user-row"><td>資本的支出（年額）</td><td>← 手入力</td></tr>
+              <tr class="user-row"><td>還元利回り</td><td>← 手入力</td></tr>
+              <tr><td>運営費用合計 / EGI / NOI</td><td>=自動計算</td></tr>
+              <tr><td><strong>収益試算値</strong></td><td>=IFERROR(…/E16,"")（自動）</td></tr>
             </tbody>
           </table>
         </div>
@@ -273,14 +293,13 @@
       </div>
 
       <div class="sheet-card">
-        <div class="sheet-tab">2. 付帯収入（optional income）</div>
+        <div class="sheet-tab">2. 付帯収入（総収入へ自動算入）</div>
         <div class="sheet-body">
           <img src="assets/screenshots/webui-optional-income.png"
-               alt="付帯収入（水道代収入・駐車場収入・その他収入）の抽出状況とGPI算入チェックボックス（デフォルト未選択）"
+               alt="付帯収入（水道代収入・駐車場収入・その他収入）の抽出状況の表示画面"
                loading="lazy">
           <p class="sheet-desc">
-            水道代収入・駐車場収入・その他収入は抽出されると表示されますが、<strong>デフォルトはすべて未選択（GPI非算入）</strong>です。
-            明示的にチェックした項目だけがGPIに算入されます。
+            水道代収入・駐車場収入・その他収入は、抽出されると経常的な付帯収入として表示され、<strong>選択操作なしで総収入（GPI）へ自動算入されます</strong>。
           </p>
         </div>
       </div>
@@ -428,8 +447,7 @@ docker run --rm -p 127.0.0.1:8000:8000 revenue-kun-web</code></pre>
 
     </div>
     <p class="section-note">
-      ⚠ 合成サンプルデータで動作確認済み。qualifying real-world PDF の評価は未完了（Issue #21 open）。
-      実物件PDFはサンプル検証の範囲外であり、実務検証済みとは表記しません。
+      ⚠ 合成サンプルデータで動作確認済みに加え、同一ベンダー系テンプレートとみられる非公開の実物件テキストPDF3件でCLI・Local Web UIからの抽出・Excel生成を確認済みです。テンプレート多様性の検証はIssue #21で継続しています。
       Claude Skill マーケットプレイスへの公開は未定で、リリース済みとは表記しません。
     </p>
     <p class="section-note">
@@ -498,8 +516,8 @@ docker run --rm -p 127.0.0.1:8000:8000 revenue-kun-web</code></pre>
         <tr>
           <td>qualifying real-world PDF</td>
           <td>
-            評価未完了（<a href="https://github.com/signal-yield/revenue-kun/issues/21">Issue #21 open</a>）。
-            実務検証済みとは表記しません。
+            同一ベンダー系テンプレートとみられる非公開の実物件テキストPDF3件でCLI・Local Web UIからの抽出・Excel生成を確認済み。
+            テンプレート多様性の検証は<a href="https://github.com/signal-yield/revenue-kun/issues/21">Issue #21</a>で継続中。
           </td>
         </tr>
         <tr>
@@ -541,15 +559,15 @@ docker run --rm -p 127.0.0.1:8000:8000 revenue-kun-web</code></pre>
         <a href="https://github.com/signal-yield/revenue-kun" class="btn btn-primary">リポジトリを見る</a>
       </div>
       <div class="cta-card">
-        <h3>v0.5.1 リリースノート（最新）</h3>
+        <h3>v0.5.2 リリースノート（最新）</h3>
         <p>
-          v0.5.1はバージョン・ドキュメント整合パッチです（機能変更なし）。ローカルWeb UI MVP・Docker Web UI・optional incomeのGPI opt-inはv0.5.0で追加されたものです。
+          v0.5.2は、OER版・費用詳細版を独立計算化し、経常的な付帯収入の自動算入へ切り替えたリリースです。ローカルWeb UI MVPはv0.5.0で追加されたものです。
         </p>
         <a
-          href="https://github.com/signal-yield/revenue-kun/releases/tag/v0.5.1"
+          href="https://github.com/signal-yield/revenue-kun/releases/tag/v0.5.2"
           class="btn btn-secondary"
         >
-          Release v0.5.1 を見る
+          Release v0.5.2 を見る
         </a>
       </div>
       <div class="cta-card">
@@ -584,8 +602,8 @@ docker run --rm -p 127.0.0.1:8000:8000 revenue-kun-web</code></pre>
         鑑定評価による「収益価格」ではありません。欠損項目は推測補完しません。
         正式な鑑定評価・価格判断・投資判断・法律的判断が必要な場合は、
         不動産鑑定士・弁護士・税理士その他の専門家に確認してください。
-        qualifying real-world text-based rent roll PDF の評価は未完了です。
-        実務検証済みとは表記しません。
+        同一ベンダー系テンプレートとみられる非公開の実物件テキストPDF3件について、CLIおよびLocal Web UIからの抽出・Excel生成を確認済みです。
+        テンプレート多様性の検証はIssue #21で継続しています。
       </p>
       <hr />
       <p>
@@ -606,7 +624,7 @@ docker run --rm -p 127.0.0.1:8000:8000 revenue-kun-web</code></pre>
 <footer class="site-footer">
   <div class="container">
     <p>
-      revenue-kun v0.5.1 &nbsp;·&nbsp; Apache 2.0 License &nbsp;·&nbsp;
+      revenue-kun v0.5.2 &nbsp;·&nbsp; Apache 2.0 License &nbsp;·&nbsp;
       <a href="https://github.com/signal-yield/revenue-kun">GitHub</a>
     </p>
     <p class="footer-issues">

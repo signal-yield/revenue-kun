@@ -192,24 +192,34 @@ def test_oer_core_income_cells_reference_rent_roll_annual_row(wb):
         )
 
 
-def test_oer_optional_income_cells_zero_when_optout(wb):
-    """デフォルト（oi_config 未指定 = opt-out）では E7/E8/E9 が =0。
-    読み取りレントロールに水道代値があっても GPI には算入しない。"""
+def test_oer_optional_income_cells_reference_rent_roll(wb):
+    """v0.5.2: 付帯収入（水道代/駐車場/その他）も常にクロスシート参照。opt-in/out 廃止。"""
+    rr_ws = wb[SHEET_RENT_ROLL]
+    annual_row = _find_row_by_label(rr_ws, 1, "年計")
+    assert annual_row is not None
+
     oer_ws = wb[SHEET_OER]
     for cell_ref in ("E7", "E8", "E9"):
         formula = oer_ws[cell_ref].value
-        assert formula == "=0", (
-            f"OER {cell_ref} should be =0 in opt-out mode, got: {formula!r}"
+        assert isinstance(formula, str) and formula.startswith("="), (
+            f"OER {cell_ref} should be a formula, got: {formula!r}"
+        )
+        assert formula != "=0", f"OER {cell_ref} must not be =0 (v0.5.2 auto-includes all income)"
+        assert SHEET_RENT_ROLL in formula, (
+            f"OER {cell_ref} should reference {SHEET_RENT_ROLL!r}, got: {formula!r}"
+        )
+        assert str(annual_row) in formula, (
+            f"OER {cell_ref} should reference row {annual_row}, got: {formula!r}"
         )
 
 
-def test_oer_optional_income_optout_label_shows_excluded(wb):
-    """opt-out 時の付帯収入行ラベルに「算入対象外」が含まれる。"""
+def test_oer_optional_income_labels_have_no_exclusion_marker(wb):
+    """v0.5.2: 付帯収入行ラベルに「算入対象外」は付与しない（常時算入のため）。"""
     oer_ws = wb[SHEET_OER]
     for row_num in (7, 8, 9):
         label = oer_ws.cell(row_num, 4).value or ""
-        assert "算入対象外" in label, (
-            f"OER row {row_num} D column should contain '算入対象外', got: {label!r}"
+        assert "算入対象外" not in label, (
+            f"OER row {row_num} D column should not contain '算入対象外', got: {label!r}"
         )
 
 
@@ -231,10 +241,9 @@ def test_oer_optional_income_rent_roll_values_visible_regardless(workbook_path):
 # ---------------------------------------------------------------------------
 
 def test_oer_core_income_cells_do_not_multiply_by_12(wb):
-    """E5/E6 (賃料/共益費) は annual total 参照なので *12 不要。
-    E7-E9 は opt-out 時 =0 なので *12 を含まない（別テストで確認）。"""
+    """E5:E9 (賃料/共益費/水道代/駐車場/その他) は annual total 参照なので *12 不要。"""
     oer_ws = wb[SHEET_OER]
-    for cell_ref in ("E5", "E6"):
+    for cell_ref in ("E5", "E6", "E7", "E8", "E9"):
         formula = oer_ws[cell_ref].value or ""
         normalized = formula.replace(" ", "")
         assert "*12" not in normalized, (
@@ -292,25 +301,46 @@ def test_oer_indicated_value_formula(wb):
 
 
 # ---------------------------------------------------------------------------
-# Test 12: NOI (E22) must NOT reference 費用詳細版; E27 must reference it
+# Test 12: v0.5.2 sheet independence — neither calculation sheet references
+# the other by name, anywhere.
 # ---------------------------------------------------------------------------
 
 def test_noi_does_not_reference_expense_sheet(wb):
-    """費用詳細版 must not be in E22 (NOI); it appears only in E27 (reference)."""
+    """費用詳細版 must not be in E22 (NOI)."""
     oer_ws = wb[SHEET_OER]
     noi_formula = oer_ws["E22"].value or ""
     assert SHEET_EXPENSE not in noi_formula, (
-        f"E22 (NOI) must not reference {SHEET_EXPENSE!r}; "
-        f"expense detail is for cross-check only. Got: {noi_formula!r}"
+        f"E22 (NOI) must not reference {SHEET_EXPENSE!r}. Got: {noi_formula!r}"
     )
 
 
-def test_expense_reference_is_in_e27_only(wb):
+def test_oer_sheet_never_references_expense_sheet(wb):
+    """v0.5.2: 直接還元法_OER のいかなる数式にも 直接還元法‗費用詳細版 は現れない。"""
     oer_ws = wb[SHEET_OER]
-    e27 = oer_ws["E27"].value or ""
-    assert SHEET_EXPENSE in e27, (
-        f"E27 should reference {SHEET_EXPENSE!r}, got: {e27!r}"
-    )
+    for formula in _all_formula_strings(oer_ws):
+        assert SHEET_EXPENSE not in formula, (
+            f"OER sheet formula unexpectedly references {SHEET_EXPENSE!r}: {formula!r}"
+        )
+
+
+def test_expense_sheet_never_references_oer_sheet(wb):
+    """v0.5.2: 直接還元法‗費用詳細版 のいかなる数式にも 直接還元法_OER は現れない。"""
+    exp_ws = wb[SHEET_EXPENSE]
+    for formula in _all_formula_strings(exp_ws):
+        assert SHEET_OER not in formula, (
+            f"Expense sheet formula unexpectedly references {SHEET_OER!r}: {formula!r}"
+        )
+
+
+def test_both_sheets_only_reference_rent_roll(wb):
+    """両計算シートが参照してよい他シートは 読み取りレントロール だけである。"""
+    for sheet_name in (SHEET_OER, SHEET_EXPENSE):
+        ws = wb[sheet_name]
+        for formula in _all_formula_strings(ws):
+            if "!" in formula:  # cross-sheet reference syntax
+                assert SHEET_RENT_ROLL in formula, (
+                    f"{sheet_name} formula references an unexpected sheet: {formula!r}"
+                )
 
 
 # ---------------------------------------------------------------------------
@@ -345,32 +375,100 @@ def test_oer_input_cells_have_fill(wb):
 
 
 # ---------------------------------------------------------------------------
-# Test 14: 費用詳細版 B10 has SUM formula; B5:B9 are empty with border+fill
+# Test 14: 費用詳細版 v0.5.2 layout — independent income block, assumption
+# inputs, expense line items, and calculation results (own row numbers,
+# no reference to 直接還元法_OER).
 # ---------------------------------------------------------------------------
 
-def test_expense_sum_row_formula(wb):
+def test_expense_income_block_references_rent_roll(wb):
+    """費用詳細版 E5:E9 は 読み取りレントロール を直接参照する（OER 経由ではない）。"""
+    rr_ws = wb[SHEET_RENT_ROLL]
+    annual_row = _find_row_by_label(rr_ws, 1, "年計")
+    assert annual_row is not None
+
     exp_ws = wb[SHEET_EXPENSE]
-    assert exp_ws["B10"].value == "=SUM(B5:B9)", (
-        f"費用詳細版 B10 should be =SUM(B5:B9), got: {exp_ws['B10'].value!r}"
+    for cell_ref in ("E5", "E6", "E7", "E8", "E9"):
+        formula = exp_ws[cell_ref].value
+        assert isinstance(formula, str) and formula.startswith("="), (
+            f"Expense {cell_ref} should be a formula, got: {formula!r}"
+        )
+        assert SHEET_RENT_ROLL in formula, (
+            f"Expense {cell_ref} should reference {SHEET_RENT_ROLL!r}, got: {formula!r}"
+        )
+        assert str(annual_row) in formula
+
+
+def test_expense_gpi_total_formula(wb):
+    exp_ws = wb[SHEET_EXPENSE]
+    assert exp_ws["E10"].value == "=SUM(E5:E9)", (
+        f"費用詳細版 E10 should be =SUM(E5:E9), got: {exp_ws['E10'].value!r}"
     )
 
 
-def test_expense_input_cells_are_empty(wb):
+def test_expense_assumption_input_cells_are_empty(wb):
+    """空室損失率(E13)/貸倒損失率(E14)/資本的支出(E15)/還元利回り(E16)。"""
     exp_ws = wb[SHEET_EXPENSE]
-    for ref in ("B5", "B6", "B7", "B8", "B9"):
+    for ref in ("E13", "E14", "E15", "E16"):
         v = exp_ws[ref].value
         assert v is None, f"費用詳細版 {ref} should be empty (input cell), got: {v!r}"
 
 
-def test_expense_input_cells_have_border(wb):
+def test_expense_line_item_input_cells_are_empty(wb):
+    """管理費/修繕費/損害保険料/固定資産税/水道光熱費/その他運営費用 (E19:E24)。"""
     exp_ws = wb[SHEET_EXPENSE]
-    for ref in ("B5", "B6", "B7", "B8", "B9"):
-        b = exp_ws[ref].border
+    for ref in ("E19", "E20", "E21", "E22", "E23", "E24"):
+        v = exp_ws[ref].value
+        assert v is None, f"費用詳細版 {ref} should be empty (input cell), got: {v!r}"
+
+
+def test_expense_input_cells_have_border_and_fill(wb):
+    exp_ws = wb[SHEET_EXPENSE]
+    for ref in ("E13", "E14", "E15", "E16", "E19", "E20", "E21", "E22", "E23", "E24"):
+        cell = exp_ws[ref]
+        b = cell.border
         has_border = any(
             s is not None and s != "none"
             for s in (b.left.style, b.right.style, b.top.style, b.bottom.style)
         )
         assert has_border, f"費用詳細版 {ref} (input cell) should have a border"
+        assert cell.fill is not None and cell.fill.fgColor is not None, (
+            f"費用詳細版 {ref} (input cell) should have a fill colour"
+        )
+
+
+def test_expense_opex_total_formula(wb):
+    exp_ws = wb[SHEET_EXPENSE]
+    assert exp_ws["E25"].value == "=SUM(E19:E24)", (
+        f"費用詳細版 E25 (運営費用合計) should be =SUM(E19:E24), got: {exp_ws['E25'].value!r}"
+    )
+
+
+def test_expense_egi_formula(wb):
+    exp_ws = wb[SHEET_EXPENSE]
+    assert exp_ws["E28"].value == "=E10*(1-N(E13)-N(E14))", (
+        f"費用詳細版 E28 (EGI) formula wrong: {exp_ws['E28'].value!r}"
+    )
+
+
+def test_expense_noi_formula(wb):
+    exp_ws = wb[SHEET_EXPENSE]
+    assert exp_ws["E29"].value == "=E28-E25", (
+        f"費用詳細版 E29 (NOI) formula wrong: {exp_ws['E29'].value!r}"
+    )
+
+
+def test_expense_net_income_formula(wb):
+    exp_ws = wb[SHEET_EXPENSE]
+    assert exp_ws["E30"].value == "=E29-N(E15)", (
+        f"費用詳細版 E30 (純収益) formula wrong: {exp_ws['E30'].value!r}"
+    )
+
+
+def test_expense_indicated_value_formula(wb):
+    exp_ws = wb[SHEET_EXPENSE]
+    assert exp_ws["E31"].value == '=IFERROR(E30/E16,"")', (
+        f"費用詳細版 E31 (収益試算値) formula wrong: {exp_ws['E31'].value!r}"
+    )
 
 
 # ---------------------------------------------------------------------------
