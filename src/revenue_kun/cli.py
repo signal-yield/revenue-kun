@@ -143,15 +143,16 @@ def run(
         for n in report.notes:
             print(f"  [注記] {n}")
         if report.optional_income_found:
-            oi_cfg = assumptions.optional_income
             for oi_key in report.optional_income_found:
-                if oi_cfg.include_in_gpi and oi_key in oi_cfg.columns:
-                    print(f"  [付帯収入] {oi_key} 列を抽出しました → GPI に算入します（opt-in）。")
-                else:
-                    print(
-                        f"  [付帯収入] {oi_key} 列を抽出しましたが、"
-                        "optional_income.include_in_gpi が false のため GPI には算入していません。"
-                    )
+                print(
+                    f"  [付帯収入] {oi_key} 列を抽出しました → "
+                    "経常的な付帯収入として direct_cap.xlsx の両計算シートへ自動算入します。"
+                )
+            if assumptions.optional_income.include_in_gpi or assumptions.optional_income.columns:
+                print(
+                    "  [注記] assumptions.yaml の optional_income 設定は非推奨です"
+                    "（v0.5.2以降、付帯収入は選択によらず自動算入されます）。"
+                )
         _print_diagnostics_summary(
             input_type="PDF",
             units=report.rows_extracted,

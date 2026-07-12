@@ -1,13 +1,19 @@
 """Stateless workbook generation logic for ``POST /api/generate`` (Issue #82).
 
 This module is a thin adapter: it reuses ``webui.preview.extract_units_from_upload``
-for validation/extraction (no PDF/CSV parsing logic is duplicated here),
-maps the browser's explicit optional-income selections onto the existing
-``revenue_kun.config.OptionalIncomeConfig``, and calls the existing
-``revenue_kun.excel_output.write_direct_cap_workbook`` directly. It does not
-call ``revenue_kun.cli.run()``, invoke ``src/main.py`` via subprocess, or
-generate any Excel formula itself -- see Issue #78 for the approved
-architecture decision.
+for validation/extraction (no PDF/CSV parsing logic is duplicated here) and
+calls the existing ``revenue_kun.excel_output.write_direct_cap_workbook``
+directly. It does not call ``revenue_kun.cli.run()``, invoke ``src/main.py``
+via subprocess, or generate any Excel formula itself -- see Issue #78 for
+the approved architecture decision.
+
+v0.5.2 product boundary: the Web UI does not collect an optional-income
+selection. Every recurring income item (賃料/共益費/水道代収入/駐車場収入/
+その他収入) extracted from the upload is always reflected in both
+calculation sheets -- see ``revenue_kun.excel_output`` for details. The
+``selected_optional_income`` parameter below is accepted only for backward
+compatibility with older frontend code that may still send it; its value
+is ignored and has no effect on the generated workbook.
 
 No output is written under ``output/``, and no ``missing_info.md`` /
 ``extraction_log.json`` is produced -- this endpoint returns only the
@@ -29,82 +35,40 @@ _SRC_DIR = Path(__file__).resolve().parents[1] / "src"
 if str(_SRC_DIR) not in sys.path:
     sys.path.insert(0, str(_SRC_DIR))
 
-from revenue_kun.config import OptionalIncomeConfig
 from revenue_kun.excel_output import DirectCapRow, write_direct_cap_workbook
 
 from .preview import PreviewFailure, extract_units_from_upload
 from .upload import generate_temp_filename, request_temp_dir
 
-# Canonical keys accepted by revenue_kun.config.OPTIONAL_INCOME_CANONICAL_KEYS.
-_CANONICAL_OPTIONAL_INCOME_KEYS = frozenset({"water", "parking", "other_income"})
-
-# The browser sends whichever string is in each checkbox's
-# `data-optional-income-key` attribute (see webui/static/app.js), which is
-# the same response-shaped key used in the preview JSON
-# (water_income/parking_income/other_income). Accept both that shape and
-# the canonical revenue_kun key for robustness.
-_UI_KEY_TO_CANONICAL: dict[str, str] = {
-    "water_income": "water",
-    "parking_income": "parking",
-    "other_income": "other_income",
-    "water": "water",
-    "parking": "parking",
-}
-
-
-def build_optional_income_config(selected_keys: list[str]) -> OptionalIncomeConfig:
-    """Map explicit UI optional-income selections onto ``OptionalIncomeConfig``.
-
-    An empty ``selected_keys`` produces the existing default (all optional
-    income excluded from GPI, still visible in the rent-roll sheet). GPI
-    inclusion is decided here -- once, in this one place -- from exactly
-    what the user explicitly selected; nothing is inferred or defaulted to
-    "on". Raises ``PreviewFailure`` for any key that maps to neither a
-    known UI key nor a canonical ``revenue_kun`` key.
-    """
-    canonical_keys: list[str] = []
-    for key in selected_keys:
-        canonical = _UI_KEY_TO_CANONICAL.get(key, key)
-        if canonical not in _CANONICAL_OPTIONAL_INCOME_KEYS:
-            raise PreviewFailure(
-                "invalid_upload",
-                f"未対応のoptional incomeカテゴリです: {key}",
-                "invalid_optional_income_category",
-                400,
-            )
-        if canonical not in canonical_keys:
-            canonical_keys.append(canonical)
-
-    return OptionalIncomeConfig(
-        include_in_gpi=bool(canonical_keys),
-        columns=canonical_keys,
-    )
-
 
 def generate_workbook(
     client_filename: str | None,
     source: BinaryIO,
-    selected_optional_income: list[str],
+    selected_optional_income: list[str] | None = None,
 ) -> bytes:
     """Validate, extract, generate the direct-capitalization workbook, and return its bytes.
 
+    *selected_optional_income* is accepted for backward compatibility only
+    (deprecated; see module docstring) and is not used -- recurring income
+    is always auto-included in both calculation sheets regardless of its
+    value.
+
     Order (matches Issue #82's required workbook lifecycle):
-      1. validate the optional-income selections (cheap, no I/O)
-      2. validate + extract the upload via ``extract_units_from_upload``
+      1. validate + extract the upload via ``extract_units_from_upload``
          (its own request-specific temp directory is created and removed
          internally before this function proceeds)
-      3. build ``DirectCapRow`` rows from the extracted units
-      4. write the workbook to a fresh request-specific temporary path
-      5. read the completed workbook into memory
-      6. remove that temporary directory
-      7. return the bytes (the caller wraps them in a ``StreamingResponse``)
+      2. build ``DirectCapRow`` rows from the extracted units
+      3. write the workbook to a fresh request-specific temporary path
+      4. read the completed workbook into memory
+      5. remove that temporary directory
+      6. return the bytes (the caller wraps them in a ``StreamingResponse``)
 
     Raises ``PreviewFailure`` for any handled validation, extraction, or
     generation failure. No workbook is generated on the extraction-failure
     path, and no stale workbook is ever returned -- each call produces (or
     fails to produce) its own bytes from scratch.
     """
-    oi_config = build_optional_income_config(selected_optional_income)
+    del selected_optional_income  # deprecated, no effect (see docstring)
     units, _input_type = extract_units_from_upload(client_filename, source)
 
     rows = [DirectCapRow.from_rent_roll_unit(unit) for unit in units]
@@ -112,7 +76,7 @@ def generate_workbook(
     with request_temp_dir() as temp_dir:
         xlsx_path = temp_dir / generate_temp_filename(".xlsx")
         try:
-            write_direct_cap_workbook(xlsx_path, rows, oi_config=oi_config)
+            write_direct_cap_workbook(xlsx_path, rows)
             data = xlsx_path.read_bytes()
         except PreviewFailure:
             raise

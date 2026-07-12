@@ -73,63 +73,50 @@ def test_generate_workbook_has_three_expected_sheets(client):
 
 
 # ---------------------------------------------------------------------------
-# Optional-income -> OptionalIncomeConfig mapping
+# v0.5.2: recurring income is always auto-included; the deprecated
+# ``optional_income`` form field is accepted but has no effect.
 # ---------------------------------------------------------------------------
 
 def _oer_income_formula(wb, cell: str) -> str:
     return wb[SHEET_OER][cell].value
 
 
-def test_no_optional_income_selection_excludes_all_from_gpi(client):
-    response = _generate(client, "rentroll.csv", _DUMMY_CSV.read_bytes(), "text/csv")
-    wb = _load_workbook_from_response(response)
-    assert _oer_income_formula(wb, "E7") == "=0"
-    assert _oer_income_formula(wb, "E8") == "=0"
-    assert _oer_income_formula(wb, "E9") == "=0"
+def _expense_income_formula(wb, cell: str) -> str:
+    return wb[SHEET_EXPENSE][cell].value
 
 
-def test_water_income_opt_in_links_to_rent_roll(client):
-    response = _generate(client, "rentroll.csv", _DUMMY_CSV.read_bytes(), "text/csv", ["water_income"])
-    wb = _load_workbook_from_response(response)
-    assert _oer_income_formula(wb, "E7") != "=0"
-    assert SHEET_RENT_ROLL in str(_oer_income_formula(wb, "E7"))
-    assert _oer_income_formula(wb, "E8") == "=0"
-    assert _oer_income_formula(wb, "E9") == "=0"
-
-
-def test_parking_income_opt_in_links_to_rent_roll(client):
-    response = _generate(client, "rentroll.csv", _DUMMY_CSV.read_bytes(), "text/csv", ["parking_income"])
-    wb = _load_workbook_from_response(response)
-    assert _oer_income_formula(wb, "E7") == "=0"
-    assert _oer_income_formula(wb, "E8") != "=0"
-    assert _oer_income_formula(wb, "E9") == "=0"
-
-
-def test_other_income_opt_in_links_to_rent_roll(client):
-    response = _generate(client, "rentroll.csv", _DUMMY_CSV.read_bytes(), "text/csv", ["other_income"])
-    wb = _load_workbook_from_response(response)
-    assert _oer_income_formula(wb, "E7") == "=0"
-    assert _oer_income_formula(wb, "E8") == "=0"
-    assert _oer_income_formula(wb, "E9") != "=0"
-
-
-def test_multiple_optional_income_selection(client):
-    response = _generate(
-        client, "rentroll.csv", _DUMMY_CSV.read_bytes(), "text/csv",
+@pytest.mark.parametrize(
+    "optional_income",
+    [
+        None,
+        [],
+        ["water_income"],
+        ["parking_income"],
+        ["other_income"],
         ["water_income", "parking_income", "other_income"],
-    )
+        ["not_a_real_category"],  # deprecated field: accepted, never validated
+    ],
+)
+def test_income_always_cross_referenced_regardless_of_deprecated_field(client, optional_income):
+    """E7:E9 (OER) と E7:E9 (費用詳細版) は、非推奨 optional_income の値に関わらず
+    常に読み取りレントロールへのクロスシート参照になる（=0 にはならない）。"""
+    response = _generate(client, "rentroll.csv", _DUMMY_CSV.read_bytes(), "text/csv", optional_income)
+    assert response.status_code == 200, response.text
     wb = _load_workbook_from_response(response)
-    assert _oer_income_formula(wb, "E7") != "=0"
-    assert _oer_income_formula(wb, "E8") != "=0"
-    assert _oer_income_formula(wb, "E9") != "=0"
+    for cell in ("E7", "E8", "E9"):
+        oer_formula = _oer_income_formula(wb, cell)
+        exp_formula = _expense_income_formula(wb, cell)
+        assert oer_formula != "=0", f"OER {cell} must not be =0, got {oer_formula!r}"
+        assert exp_formula != "=0", f"Expense {cell} must not be =0, got {exp_formula!r}"
+        assert SHEET_RENT_ROLL in str(oer_formula)
+        assert SHEET_RENT_ROLL in str(exp_formula)
 
 
-def test_invalid_optional_income_category_is_safe_failure(client):
+def test_deprecated_invalid_category_no_longer_causes_safe_failure(client):
+    """v0.5.2: 非推奨フィールドは検証されないため、未知の値でも 200 で成功する。"""
     response = _generate(client, "rentroll.csv", _DUMMY_CSV.read_bytes(), "text/csv", ["not_a_real_category"])
-    assert response.status_code == 400
-    body = response.json()
-    assert body["ok"] is False
-    assert body["error"]["detail_code"] == "invalid_optional_income_category"
+    assert response.status_code == 200
+    assert response.headers["content-type"] == _XLSX_MEDIA_TYPE
 
 
 # ---------------------------------------------------------------------------

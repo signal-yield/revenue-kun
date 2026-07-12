@@ -63,12 +63,23 @@ def test_valid_csv_preview_includes_missing_information(client):
 
 
 def test_valid_csv_preview_includes_optional_income_summary(client):
+    """v0.5.2: monthly_total/annual_total/gpi_included を含む拡張スキーマ。"""
     response = _upload(client, "rentroll.csv", _DUMMY_CSV.read_bytes(), "text/csv")
     body = response.json()
     oi = body["optional_income"]
     assert set(oi.keys()) == {"water_income", "parking_income", "other_income"}
     for entry in oi.values():
-        assert set(entry.keys()) == {"present", "total"}
+        assert set(entry.keys()) == {"present", "monthly_total", "annual_total", "gpi_included"}
+        assert entry["gpi_included"] is True
+        assert entry["annual_total"] == pytest.approx(entry["monthly_total"] * 12)
+
+
+def test_valid_csv_preview_includes_gpi_annual(client):
+    """v0.5.2: プレビュー応答のトップレベルに算入後のGPI年額が含まれる。"""
+    response = _upload(client, "rentroll.csv", _DUMMY_CSV.read_bytes(), "text/csv")
+    body = response.json()
+    assert isinstance(body["gpi_annual"], (int, float))
+    assert body["gpi_annual"] >= 0
 
 
 def test_valid_csv_preview_rows_do_not_include_tenant_name(client):
