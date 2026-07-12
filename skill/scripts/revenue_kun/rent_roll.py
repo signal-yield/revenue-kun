@@ -23,6 +23,20 @@ class RentRollUnit:
     月額共益費_円: float | None
     稼働状況: str | None
     契約満了日: str | None
+    # 付帯収入（optional income）— opt-in 時のみ GPI に算入
+    # 水道代は収入サイド（運営費用の水道光熱費とは別管理）
+    月額水道代_円: float | None = None
+    月額駐車場収入_円: float | None = None
+    月額その他収入_円: float | None = None
+
+    def get_optional_income(self, key: str) -> float | None:
+        """canonical key で付帯収入の月額を取得する。"""
+        _map: dict[str, float | None] = {
+            "water": self.月額水道代_円,
+            "parking": self.月額駐車場収入_円,
+            "other_income": self.月額その他収入_円,
+        }
+        return _map.get(key)
 
     @property
     def is_occupied(self) -> bool:
