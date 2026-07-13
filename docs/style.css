@@ -400,6 +400,38 @@ img { max-width: 100%; height: auto; }
 .mini-sheet .vacant-row { background: var(--c-vacant-row); }
 .mini-sheet .total-row  { background: var(--c-total-row); font-weight: 600; }
 
+.table-scroll {
+  overflow-x: auto;
+}
+
+.browser-chrome {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #e8e8e8;
+  border-bottom: 1px solid var(--c-border);
+}
+.browser-chrome .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.browser-chrome .dot-r { background: #ff5f56; }
+.browser-chrome .dot-y { background: #ffbd2e; }
+.browser-chrome .dot-g { background: #27c93f; }
+.browser-chrome .url-bar {
+  flex: 1;
+  background: #fff;
+  border: 1px solid var(--c-border);
+  border-radius: 4px;
+  padding: 3px 10px;
+  font-size: 0.75rem;
+  color: var(--c-muted);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+}
+
 /* ── Workflow ─────────────────────────────────────────────── */
 .section-workflow {
   background: var(--c-bg);
