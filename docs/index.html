@@ -3,21 +3,39 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>revenue-kun — レントロールPDF/CSVからローカルWeb UIで直接還元法Excelを生成するOSS</title>
+  <title>revenue-kun v0.5.2 — レントロールPDF/CSVから直接還元法Excelを生成するOSS（Local Web UI / Docker / Claude Code・Codex Skill）</title>
   <meta
     name="description"
-    content="revenue-kun v0.5.2は、レントロールCSVまたはテキスト抽出可能なPDFから、ローカルWeb UI（またはDocker対応CLI）で直接還元法の収益試算Excelワークブック（direct_cap.xlsx）を生成するlocal-firstなOSSです。"
+    content="revenue-kun v0.5.2は、不動産のレントロール（CSVまたはテキスト抽出可能なPDF）から直接還元法の収益試算Excel（direct_cap.xlsx）を生成するOSSです。Local Web UI・Docker対応CLI・Claude Code/Codex向けSkillから利用できます。Apache License 2.0。"
   />
   <meta
     property="og:title"
-    content="revenue-kun v0.5.2 — OER版・費用詳細版の独立計算化"
+    content="revenue-kun v0.5.2 — レントロールから収益試算Excelを生成するOSS"
   />
   <meta
     property="og:description"
-    content="レントロールPDF/CSVをローカルWeb UIでpreviewし、経常的な付帯収入を自動算入したうえでdirect_cap.xlsx（OER版・費用詳細版を同時生成）を生成・ダウンロード。CLI/Docker対応も継続。"
+    content="レントロールPDF/CSVをLocal Web UIでpreviewし、経常的な付帯収入を自動算入したうえでdirect_cap.xlsx（OER版・費用詳細版を同時生成）を生成・ダウンロード。CLI/Docker対応、Claude Code・Codex向けSkillにも対応。"
   />
   <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://signal-yield.github.io/revenue-kun/" />
+  <meta property="og:image" content="https://signal-yield.github.io/revenue-kun/assets/screenshots/workbook-oer.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="canonical" href="https://signal-yield.github.io/revenue-kun/" />
   <link rel="stylesheet" href="style.css" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "revenue-kun（収益還元クン）",
+    "softwareVersion": "0.5.2",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Windows, macOS, Linux",
+    "description": "不動産のレントロール（CSVまたはテキスト抽出可能なPDF）から、直接還元法による収益試算Excel（direct_cap.xlsx）を生成するOSS。Local Web UI・Docker対応CLI・Claude Code/Codex向けSkillから利用可能。鑑定評価ではなく収益試算値を出力する。",
+    "license": "https://www.apache.org/licenses/LICENSE-2.0",
+    "url": "https://signal-yield.github.io/revenue-kun/",
+    "codeRepository": "https://github.com/signal-yield/revenue-kun"
+  }
+  </script>
 </head>
 <body>
 
@@ -38,6 +56,9 @@
       <span class="badge badge-oss">OSS</span>
       <span class="badge badge-license">Apache 2.0</span>
       <span class="badge badge-version">v0.5.2</span>
+      <span class="badge badge-oss">Docker対応</span>
+      <span class="badge badge-oss">Local Web UI</span>
+      <span class="badge badge-oss">Claude Code / Codex Skill</span>
     </div>
     <h1 class="hero-headline">
       CSV / テキストPDFから、<br>
@@ -270,54 +291,88 @@
   </div>
 </section>
 
-<!-- ━━━━━━━━━━━━━━━ Section 4b: Screenshots ━━━━━━━━━━━━━━━━━━ -->
-<section class="section section-demo">
+<!-- ━━━━━━━━━━━━━━━ Section 4b: Local Web UI / Screenshots ━━━━━━━━━━━━━━━━━━ -->
+<section class="section section-demo" id="webui">
   <div class="container">
-    <h2>ローカルWeb UIの画面 <span class="label-synth">合成データ</span></h2>
+    <h2>Local Web UIの画面 <span class="label-synth">合成データ</span></h2>
     <p class="section-sub">
-      以下はすべて合成サンプルデータ（<code>examples/synthetic_rent_roll.pdf</code>）から生成した画面です。
+      以下はすべて合成サンプルデータ（<code>examples/synthetic_rent_roll.pdf</code>）から生成した内容です。
       実レントロール・実テナント名・顧客情報は一切含みません。
+      上段はv0.5.2の実際の画面構成・実表示文言をもとに再構成した図解、下段はExcel生成後の実データ表示です。
     </p>
 
     <div class="sheet-cards">
       <div class="sheet-card">
-        <div class="sheet-tab">1. アップロード / プレビュー</div>
+        <div class="browser-chrome">
+          <span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+          <span class="url-bar">http://127.0.0.1:8000/</span>
+        </div>
         <div class="sheet-body">
-          <img src="assets/screenshots/webui-preview.png"
-               alt="ローカルWeb UIで合成レントロールをプレビューした画面（区画数・稼働/空室サマリー・抽出テーブル・欠損情報を表示）"
-               loading="lazy">
+          <p class="sheet-desc" style="font-weight:600;color:var(--c-primary);">revenue-kun</p>
           <p class="sheet-desc">
-            CSVまたはテキスト抽出可能なPDFをアップロードすると、区画数・稼働/空室サマリー・抽出結果・欠損情報がその場で確認できます。
+            出力は収益試算Excelであり、鑑定評価ではありません。金額は「収益試算値」であり「収益価格」ではありません。
+            OCR・スキャンPDF・スマホ撮影には対応していません。ホスティング型SaaSとしては提供していません。
           </p>
+          <p class="sheet-desc"><strong>1. ファイルを選択</strong> — synthetic_rent_roll.pdf ／ <span class="badge badge-oss" style="font-size:0.7rem;">Preview</span></p>
+          <p class="sheet-desc"><strong>2. プレビュー結果</strong> — 区画数: 3　稼働: 2 / 空室: 1</p>
+          <div class="table-scroll">
+          <table class="mini-sheet">
+            <thead>
+              <tr><th>部屋</th><th>状態</th><th>賃料</th><th>共益費</th><th>水道代収入</th><th>駐車場収入</th><th>その他収入</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>101</td><td>入居</td><td>80,000</td><td>5,000</td><td>2,000</td><td>10,000</td><td>0</td></tr>
+              <tr><td>102</td><td>入居</td><td>92,000</td><td>5,000</td><td>2,000</td><td>0</td><td>1,500</td></tr>
+              <tr class="vacant-row"><td>201</td><td>空室</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>
+            </tbody>
+          </table>
+          </div>
+          <p class="sheet-desc" style="margin-top:10px;"><strong>付帯収入（総収入へ自動算入）</strong> — 水道代収入・駐車場収入・その他収入は、抽出されると選択操作なしで総収入（GPI）へ自動算入されます。</p>
+          <p class="sheet-desc">GPI（潜在総収入・年額）: <strong>2,370,000 円</strong></p>
+          <p class="sheet-desc"><strong>3. Excel生成・ダウンロード</strong> — 「Generate Excel」で <code>direct_cap.xlsx</code> を生成します。空室損失率・OER・個別費用・還元利回り等はダウンロード後のExcelで入力します。</p>
         </div>
       </div>
 
       <div class="sheet-card">
-        <div class="sheet-tab">2. 付帯収入（総収入へ自動算入）</div>
-        <div class="sheet-body">
-          <img src="assets/screenshots/webui-optional-income.png"
-               alt="付帯収入（水道代収入・駐車場収入・その他収入）の抽出状況の表示画面"
-               loading="lazy">
-          <p class="sheet-desc">
-            水道代収入・駐車場収入・その他収入は、抽出されると経常的な付帯収入として表示され、<strong>選択操作なしで総収入（GPI）へ自動算入されます</strong>。
-          </p>
-        </div>
-      </div>
-
-      <div class="sheet-card">
-        <div class="sheet-tab">3. 直接還元法_OER</div>
+        <div class="sheet-tab">直接還元法_OER</div>
         <div class="sheet-body">
           <img src="assets/screenshots/workbook-oer.png"
-               alt="生成されたExcelの直接還元法_OERシート（収入項目・前提条件入力欄・収益試算値の計算結果）"
+               alt="生成されたExcelの直接還元法_OERシート（収入項目・前提条件入力欄・収益試算値の計算結果、判断値セルは未入力）"
                loading="lazy">
           <p class="sheet-desc">
-            ダウンロードされる <code>direct_cap.xlsx</code> の収益試算サマリーシートです。仮定値はユーザーが手入力します。
+            <code>direct_cap.xlsx</code> の収益試算サマリーシート（OER方式）です。収入は自動算入済み、判断値はユーザーが手入力します。
           </p>
         </div>
       </div>
 
       <div class="sheet-card">
-        <div class="sheet-tab">4. 読み取りレントロール</div>
+        <div class="sheet-tab">直接還元法‗費用詳細版</div>
+        <div class="sheet-body">
+          <table class="mini-sheet">
+            <thead><tr><th>D列（項目）</th><th>E列（値）</th></tr></thead>
+            <tbody>
+              <tr><td>貸室賃料収入</td><td>2,064,000</td></tr>
+              <tr><td>共益費収入</td><td>120,000</td></tr>
+              <tr><td>水道代収入</td><td>48,000</td></tr>
+              <tr><td>駐車場収入</td><td>120,000</td></tr>
+              <tr><td>その他収入</td><td>18,000</td></tr>
+              <tr><td><strong>総収入（年額）</strong></td><td><strong>2,370,000</strong></td></tr>
+              <tr class="user-row"><td>空室損失率</td><td>（未入力）</td></tr>
+              <tr class="user-row"><td>貸倒損失率</td><td>（未入力）</td></tr>
+              <tr class="user-row"><td>管理費・修繕費・損害保険料・固定資産税・水道光熱費・その他運営費用</td><td>（未入力）</td></tr>
+              <tr class="user-row"><td>資本的支出（年額）</td><td>（未入力）</td></tr>
+              <tr class="user-row"><td>還元利回り</td><td>（未入力）</td></tr>
+              <tr><td><strong>収益試算値</strong></td><td>（還元利回り未入力のため空欄）</td></tr>
+            </tbody>
+          </table>
+          <p class="sheet-desc" style="margin-top:10px;">
+            個別費用を積み上げる方式のシートです。収入セルは<code>直接還元法_OER</code>とは別に本シート独自で読み取りレントロールを参照し、判断値・計算結果も互いに一切参照しません（完全独立計算）。
+          </p>
+        </div>
+      </div>
+
+      <div class="sheet-card">
+        <div class="sheet-tab">読み取りレントロール</div>
         <div class="sheet-body">
           <img src="assets/screenshots/workbook-rent-roll.png"
                alt="生成されたExcelの読み取りレントロールシート（区画ごとの賃料・共益費・付帯収入・月計・年計）"
@@ -328,6 +383,9 @@
         </div>
       </div>
     </div>
+    <p class="section-sub" style="margin-top:16px;font-size:0.78rem;">
+      ※ 上段のLocal Web UI画面は、実際のテンプレート表示文言と<code>examples/synthetic_rent_roll.pdf</code>の実データをもとに構成した図解です（写真的なスクリーンショットではありません）。
+    </p>
   </div>
 </section>
 
@@ -387,10 +445,10 @@
   <div class="container">
     <h2>利用方法</h2>
     <p class="section-sub">
-      v0.5.0の正式な利用形態は、<strong>ローカルWeb UI</strong>・<strong>ローカルCLI</strong>・<strong>Docker</strong>です。
+      revenue-kunの利用形態は、<strong>ローカルWeb UI</strong>・<strong>ローカルCLI</strong>・<strong>Docker</strong>、
+      そして<strong>Claude Code / Codex向けSkill</strong>です。
       いずれもローカル実行専用で、ホスティング型SaaSではありません。
-      claude.ai / Cowork向けSkillもリポジトリ内に収録していますが、
-      Skillマーケットプレイスでは公開していません。
+      Skillはリポジトリ内に収録していますが、Skillマーケットプレイスでは公開していません。
     </p>
     <div class="claude-cards">
 
@@ -436,23 +494,38 @@ docker run --rm -p 127.0.0.1:8000:8000 revenue-kun-web</code></pre>
         </p>
       </div>
 
-      <div class="claude-card">
+      <div class="claude-card" id="skill">
         <div class="claude-card-icon">☁️</div>
-        <h3>claude.ai / Cowork Skill（補助的な利用形態）</h3>
+        <h3>Claude Code / Codex 向け Skill（補助的な利用形態）</h3>
         <p style="font-size:0.85em;color:#555;">
-          リポジトリ内に Skill 実装（<code>skill/</code>）を収録しています。<strong>Skillマーケットプレイスでは未公開</strong>です。
-          空室損失率・経費率・還元利回り等は、出力された Excel にユーザーが手入力します。Claude は値を提案しません。
+          リポジトリ内に <strong>Claude.ai / Cowork向けSkill</strong>（<code>skill/</code>）と
+          <strong>Codex向けSkill</strong>（<code>.agents/skills/revenue-kun/</code>）の両方を収録しています。<strong>Skillマーケットプレイスでは未公開</strong>です。
+        </p>
+        <p style="font-size:0.85em;color:#555;">
+          Claude Code または Codex 上で「revenue-kunを起動して」「Web UIを開いて」等と依頼すると、Local Web UIを起動する構成になっています。
+          revenue-kun自体が自律的に判断・実行するAIエージェントというわけではなく、あくまでClaude Code / CodexのSkillからコマンドを起動・実行できる、という位置づけです。
+        </p>
+        <div class="code-block">
+          <div class="code-header">起動コマンド</div>
+          <pre><code>python -m uvicorn webui.app:app --host 127.0.0.1 --port 8000</code></pre>
+        </div>
+        <p style="font-size:0.8em;color:#666;">
+          起動前に <code>/healthz</code> で既存プロセスの有無を確認し、起動済みの場合は重複起動せず既存プロセスを再利用します。
+          <code>127.0.0.1</code> 限定bindで、ホスティング型SaaSではありません。
+          空室損失率・経費率・還元利回り等は、出力された Excel にユーザーが手入力します。Claude / Codex は値を提案しません。
         </p>
       </div>
 
     </div>
     <p class="section-note">
-      ⚠ 合成サンプルデータで動作確認済みに加え、同一ベンダー系テンプレートとみられる非公開の実物件テキストPDF3件でCLI・Local Web UIからの抽出・Excel生成を確認済みです。テンプレート多様性の検証はIssue #21で継続しています。
+      ⚠ 合成サンプルデータで動作確認済みに加え、非公開の実務レントロールPDF3件でCLIおよびLocal Web UIからの抽出・Excel生成を確認済みです。
+      ただし、評価した3件は同一ベンダー系または近似テンプレートとみられます。テンプレート多様性の検証はIssue #21で継続中です。
+      「実務PDF全般で検証済み」「あらゆるレントロールに対応」という意味ではありません。
       Claude Skill マーケットプレイスへの公開は未定で、リリース済みとは表記しません。
     </p>
     <p class="section-note">
-      v0.5.0では、pytest 375件・CLI smoke test・ローカルWeb UI smoke test・Docker Web UIのbuild/run/<code>/api/preview</code>/<code>/api/generate</code>を確認済みです。詳細は
-      <a href="https://github.com/signal-yield/revenue-kun/releases/tag/v0.5.0">Release Notes</a> を参照してください。
+      v0.5.2では、メインテスト401件・Skillテスト7件が成功しています。Docker環境でLocal Web UIのbuild・起動・<code>/api/preview</code>・<code>/api/generate</code>・Excel出力も確認済みです。詳細は
+      <a href="https://github.com/signal-yield/revenue-kun/releases/tag/v0.5.2">Release Notes</a> を参照してください。
     </p>
   </div>
 </section>
@@ -516,12 +589,12 @@ docker run --rm -p 127.0.0.1:8000:8000 revenue-kun-web</code></pre>
         <tr>
           <td>qualifying real-world PDF</td>
           <td>
-            同一ベンダー系テンプレートとみられる非公開の実物件テキストPDF3件でCLI・Local Web UIからの抽出・Excel生成を確認済み。
+            非公開の実務レントロールPDF3件（同一ベンダー系または近似テンプレートとみられる）でCLI・Local Web UIからの抽出・Excel生成を確認済み。
             テンプレート多様性の検証は<a href="https://github.com/signal-yield/revenue-kun/issues/21">Issue #21</a>で継続中。
           </td>
         </tr>
         <tr>
-          <td>複数ページ PDF・複雑な結合セル</td>
+          <td>複雑な結合セル・複数ページにまたがる複雑な表の結合</td>
           <td>対象外。現バージョンの抽出スコープ外です。</td>
         </tr>
         <tr>
@@ -539,9 +612,13 @@ docker run --rm -p 127.0.0.1:8000:8000 revenue-kun-web</code></pre>
         <tr>
           <td>ホスティング型SaaS / 認証 / 複数ユーザー対応</td>
           <td>
-            対象外です。v0.5.0のローカルWeb UIはローカル実行専用（<code>127.0.0.1</code> のみにbind）で、
-            ユーザーアカウント・認証・永続保存はありません。スマホ撮影対応も今後の検討対象です。
+            対象外です。ローカルWeb UIはローカル実行専用（<code>127.0.0.1</code> のみにbind）で、
+            ユーザーアカウント・認証・永続保存はありません。
           </td>
+        </tr>
+        <tr>
+          <td>スマートフォン撮影画像</td>
+          <td>対象外です。CSVおよびテキスト抽出可能なPDFのみに対応しています。</td>
         </tr>
       </tbody>
     </table>
@@ -602,7 +679,7 @@ docker run --rm -p 127.0.0.1:8000:8000 revenue-kun-web</code></pre>
         鑑定評価による「収益価格」ではありません。欠損項目は推測補完しません。
         正式な鑑定評価・価格判断・投資判断・法律的判断が必要な場合は、
         不動産鑑定士・弁護士・税理士その他の専門家に確認してください。
-        同一ベンダー系テンプレートとみられる非公開の実物件テキストPDF3件について、CLIおよびLocal Web UIからの抽出・Excel生成を確認済みです。
+        非公開の実務レントロールPDF3件（同一ベンダー系または近似テンプレートとみられる）について、CLIおよびLocal Web UIからの抽出・Excel生成を確認済みです。
         テンプレート多様性の検証はIssue #21で継続しています。
       </p>
       <hr />
@@ -613,7 +690,9 @@ docker run --rm -p 127.0.0.1:8000:8000 revenue-kun-web</code></pre>
           Missing items are not automatically filled in.
           For formal appraisal, pricing decisions, investment decisions, or legal / tax advice,
           consult a qualified professional.
-          Evaluation against qualifying real-world text-based rent roll PDFs is not yet complete.
+          Extraction and Excel generation have been confirmed against three non-public real-world
+          text-based rent roll PDFs (likely from the same or similar vendor templates); evaluation
+          against a wider range of templates is ongoing under Issue #21.
         </em>
       </p>
     </div>
