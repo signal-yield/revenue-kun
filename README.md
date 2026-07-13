@@ -14,7 +14,7 @@ NOI（運営純収益）を算出し、**収益試算値**と感応度分析を�
 > 賃料・共益費・水道代収入・駐車場収入・その他収入といった経常的な付帯収入は、利用者の選択なしで両計算シートのGPIへ自動反映されます（**optional incomeのopt-in/opt-out選択は廃止**）。  
 > `直接還元法‗費用詳細版` は、個別運営費用（管理費・修繕費・損害保険料・固定資産税・水道光熱費・その他運営費用）を入力すると、`直接還元法_OER` から完全に独立してEGI→NOI→純収益→収益試算値まで自算定します（旧バージョンの「経費率の妥当性確認用の参考表示」から変更）。両シートは互いの入力値・計算値・シートを一切参照しません。  
 > `assumptions.yaml` の `optional_income.include_in_gpi` / `columns` 設定は非推奨です。後方互換のため引き続き受理しますが、計算結果には一切影響しません。  
-> 同一ベンダー系テンプレートとみられる非公開の実物件テキストPDF3件について、CLIおよびLocal Web UIからの抽出・Excel生成を確認済みです。テンプレート多様性の検証はIssue #21で継続しています。
+> 同一ベンダー系または近似テンプレートとみられる非公開の実務レントロールPDF3件について、CLIおよびLocal Web UIからの抽出・Excel生成を確認済みです。テンプレート多様性の検証はIssue #21で継続しています（「実務PDF全般で検証済み」という意味ではありません）。
 
 > **v0.5.1 — バージョン・ドキュメント整合パッチ**  
 > v0.5.0（Local Web UI MVP）に対する、機能変更を伴わない version / documentation alignment patch です。  
@@ -90,7 +90,7 @@ docker run --rm -p 127.0.0.1:8000:8000 revenue-kun-web
 
 Then open `http://127.0.0.1:8000/` in your browser. The host side is bound to `127.0.0.1` (loopback) only — this is **not** exposed to the public internet, and this is **not** a hosted SaaS. Building/running this image requires a working Docker daemon.
 
-> **Verified (Docker Desktop environment)**: `Dockerfile.web` build (both regular and `--no-cache`), loopback-bound `docker run`, `GET /healthz`, `POST /api/preview`, `POST /api/generate`, `direct_cap.xlsx` generation, and optional-income opt-out/explicit opt-in have all been confirmed to work as of v0.5.1.
+> **Verified (Docker Desktop environment)**: `Dockerfile.web` build (both regular and `--no-cache`), loopback-bound `docker run`, `GET /healthz`, `POST /api/preview`, `POST /api/generate`, and `direct_cap.xlsx` generation (with independent OER / expense-detail sheets and recurring income auto-included in GPI) have all been confirmed to work as of v0.5.2.
 >
 > **Historical note**: in one earlier development sandbox (predating the verification above), no Docker daemon was available, so `docker build -f Dockerfile.web` / `docker run` could not be executed there at that time; `Dockerfile.web` was instead reviewed manually. Please open an Issue if you run into a build/run problem in your own environment.
 
@@ -145,15 +145,8 @@ All screenshots below use synthetic sample data only.
 No real rent rolls, tenant names, client data, or property-identifying information are shown.
 The synthetic sample used to produce them is [`examples/synthetic_rent_roll.pdf`](examples/synthetic_rent_roll.pdf).
 
-> **Note**: these images are data-accurate renders of the actual Web UI output and generated workbook values, produced from a real `/api/preview` / `/api/generate` run against the synthetic sample above (not hand-drawn mockups with invented numbers). A CLI screenshot will be added later.
-
-### Local Web UI preview
-
-<img src="docs/assets/screenshots/webui-preview.png" alt="Local Web UI preview with synthetic rent roll data" width="800">
-
-### Optional income controls
-
-<img src="docs/assets/screenshots/webui-optional-income.png" alt="Optional income controls showing water, parking, and other income using synthetic data" width="800">
+> **Note**: these images are data-accurate renders of the actual Web UI output and generated workbook values, produced from a real `/api/preview` / `/api/generate` run against the synthetic sample above (not hand-drawn mockups with invented numbers).
+> The Local Web UI preview and `直接還元法‗費用詳細版` screenshots are being re-captured against the current v0.5.2 UI (the previous images showed the pre-v0.5.2 optional-income opt-in/opt-out controls, which have since been removed) and are temporarily omitted rather than shown out of date. A CLI screenshot will be added later.
 
 ### Workbook — 直接還元法_OER
 
@@ -550,25 +543,38 @@ python src/main.py --assumptions assumptions.sample.yaml --rent-roll-pdf data/sa
 | 項目 | 状態 |
 |------|------|
 | OCR・スキャン PDF | 対象外 |
-| qualifying real-world PDF の評価 | 同一ベンダー系テンプレートとみられる非公開の実物件テキストPDF3件でCLI・Local Web UIからの抽出・Excel生成を確認済み。テンプレート多様性の検証はIssue #21で継続中 |
+| qualifying real-world PDF の評価 | 同一ベンダー系または近似テンプレートとみられる非公開の実務レントロールPDF3件でCLI・Local Web UIからの抽出・Excel生成を確認済み。テンプレート多様性の検証はIssue #21で継続中 |
 | 空室区画の賃料推測補完 | 実施しません。空欄はユーザーが手入力します |
 | 鑑定評価 | 対象外。出力は「収益試算値」であり「収益価格」ではありません |
 | 投資助言・法律助言・税務助言 | 対象外 |
 
 ---
 
-## claude.ai / Cowork Skill
+## claude.ai / Cowork Skill・Codex Skill
 
-revenue-kun は **claude.ai / Cowork で動く OSS Skill**（`skill/` ディレクトリ）として実装しています。
-clone もターミナルも不要で、レントロール PDF をアップロードするだけで収益試算 Excel を出力できます。
+revenue-kun は **claude.ai / Cowork で動く OSS Skill**（`skill/` ディレクトリ）と、**Codex 向けの Skill**（`.agents/skills/revenue-kun/` ディレクトリ）の両方を実装しています。
+claude.ai / Cowork版はcloneもターミナルも不要で、レントロール PDF をアップロードするだけで収益試算 Excel を出力できます。Codex版はリポジトリを直接操作するローカル環境向けです。
 
 | ファイル | 内容 |
 |----------|------|
 | `CLAUDE.md` | 開発時オペレーター指示（免責・Checkpoint・禁止コマンド等） |
-| `skill/SKILL.md` | Skill エントリポイント（トリガー・免責・入出力定義） |
+| `skill/SKILL.md` | claude.ai / Cowork向け Skill エントリポイント（トリガー・免責・入出力定義） |
+| `.agents/skills/revenue-kun/SKILL.md` | Codex 向け Skill エントリポイント |
 | `build_skill.py` | `src/` → `skill/scripts/` 同期スクリプト |
 
-> 同一ベンダー系テンプレートとみられる非公開の実物件テキストPDF3件について、CLIおよびLocal Web UIからの抽出・Excel生成を確認済みです。テンプレート多様性の検証はIssue #21で継続しています。
+### Local Web UI の起動（Claude Code / Codex 経由）
+
+Claude Code または Codex 上で「revenue-kunを起動して」「Web UIを開いて」等と依頼すると、`python src/main.py` の実行ではなく Local Web UI を起動する構成になっています。
+
+```
+python -m uvicorn webui.app:app --host 127.0.0.1 --port 8000
+```
+
+- 起動前に `GET /healthz` で既存プロセスの有無を確認し、`{"status":"ok"}` が返る場合は重複起動せず既存プロセスを再利用します。
+- `127.0.0.1`（ループバック）限定でbindされ、ホスティング型SaaSではありません。
+- この起動分岐はLocal Web UIの起動のみを扱い、CLIによる `direct_cap.xlsx` 生成フロー自体は変更しません。
+
+> 同一ベンダー系または近似テンプレートとみられる非公開の実務レントロールPDF3件について、CLIおよびLocal Web UIからの抽出・Excel生成を確認済みです。テンプレート多様性の検証はIssue #21で継続しています（「実務PDF全般で検証済み」という意味ではありません）。
 > Claude Skill マーケットプレイスへの公開は未定。Claude Skill リリース済みとは表記しません。
 
 ---
@@ -669,8 +675,8 @@ python -m pytest -q
 
 Python 環境を構築せずに、Docker で再現可能な CLI 実行環境を使えます。
 
-> OCR・スキャン PDF・スマホ撮影対応は Docker イメージに含まれません（今後の検討対象）。
-> 同一ベンダー系テンプレートとみられる非公開の実物件テキストPDF3件について、CLIおよびLocal Web UIからの抽出・Excel生成を確認済みです。テンプレート多様性の検証はIssue #21で継続しています。
+> OCR・スキャン PDF・スマホ撮影には対応していません（Docker イメージにも含まれません）。
+> 同一ベンダー系または近似テンプレートとみられる非公開の実務レントロールPDF3件について、CLIおよびLocal Web UIからの抽出・Excel生成を確認済みです。テンプレート多様性の検証はIssue #21で継続しています。
 
 ### ビルド
 
@@ -756,7 +762,7 @@ docker run --rm \
 ```
 
 > **注意**: テキストベースの PDF（pdfplumber で抽出可能なもの）のみ対応。
-> スキャン PDF・画像 PDF には対応していません（OCR は今後の検討対象）。
+> スキャン PDF・画像 PDF・OCR には対応していません。
 
 ### テストをコンテナ内で実行
 
