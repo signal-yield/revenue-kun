@@ -1,7 +1,5 @@
-# 生成物（出力ファイル）
-output/*.xlsx
-output/*.md
-output/*.json
+# 生成物（出力ファイル）— サブディレクトリを含め再帰的に除外
+output/
 
 # Python
 __pycache__/
