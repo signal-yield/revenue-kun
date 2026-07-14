@@ -12,6 +12,7 @@ MARKETPLACE_PATH = ROOT / ".agents" / "plugins" / "marketplace.json"
 CANONICAL_SKILL = ROOT / ".agents" / "skills" / "revenue-kun" / "SKILL.md"
 PACKAGED_SKILL = ROOT / "plugins" / "revenue-kun" / "skills" / "revenue-kun" / "SKILL.md"
 DOC_PATH = ROOT / "docs" / "CODEX_PLUGIN_MARKETPLACE.md"
+INSTALL_DOC_PATH = ROOT / "docs" / "CODEX_PLUGIN_INSTALL.md"
 SUBMISSION_DOC_PATH = ROOT / "docs" / "CODEX_DIRECTORY_SUBMISSION.md"
 PRIVACY_PATH = ROOT / "docs" / "privacy.html"
 TERMS_PATH = ROOT / "docs" / "terms.html"
@@ -104,6 +105,7 @@ def test_public_links_and_license_exist() -> None:
     assert (ROOT / "README.md").exists()
     assert (ROOT / "LICENSE").exists()
     assert DOC_PATH.exists()
+    assert INSTALL_DOC_PATH.exists()
     assert SUBMISSION_DOC_PATH.exists()
     assert PRIVACY_PATH.exists()
     assert TERMS_PATH.exists()
@@ -176,6 +178,45 @@ def test_public_support_page_has_required_submission_guidance() -> None:
         "https://github.com/signal-yield/revenue-kun/issues",
     ]:
         assert required in text
+
+
+def test_codex_marketplace_install_docs_are_user_ready() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    page = (ROOT / "docs" / "index.html").read_text(encoding="utf-8")
+    install_doc = INSTALL_DOC_PATH.read_text(encoding="utf-8")
+    combined = "\n".join([readme, page, install_doc])
+
+    for required in [
+        "codex plugin marketplace add signal-yield/revenue-kun",
+        "codex plugin marketplace list",
+        "codex plugin marketplace remove signal-yield",
+        "repo-hosted Codex Marketplace",
+        "Marketplace `signal-yield`",
+        "Plugin `revenue-kun`",
+        "/plugins",
+        "signal-yield` marketplace",
+        "open `revenue-kun`, and install it",
+        "127.0.0.1",
+        "hosted SaaS",
+        "OCR",
+        "scanned PDFs",
+        "smartphone-captured images",
+        "income-estimation values",
+        "not a real-estate appraisal",
+        "does not send input files to external services",
+    ]:
+        assert required in combined
+
+    forbidden_claims = [
+        "OpenAI公式Directoryに掲載済み",
+        "official Directory listing is available",
+        "verified publisher display is available",
+        "codex plugin add revenue-kun@signal-yield",
+        "OCR対応",
+        "hosted SaaSとして提供",
+    ]
+    for phrase in forbidden_claims:
+        assert phrase not in combined
 
 
 def test_no_private_property_artifacts_are_packaged() -> None:
