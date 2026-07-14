@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -68,6 +69,30 @@ def test_packaged_skill_matches_canonical_skill() -> None:
     )
     assert result.returncode == 0, result.stderr
     assert CANONICAL_SKILL.read_bytes() == PACKAGED_SKILL.read_bytes()
+
+
+def test_sync_check_fails_for_deliberate_mismatch(tmp_path: Path) -> None:
+    temporary_root = tmp_path / "repo"
+    source = temporary_root / ".agents" / "skills" / "revenue-kun"
+    destination = temporary_root / "plugins" / "revenue-kun" / "skills" / "revenue-kun"
+    scripts = temporary_root / "scripts"
+    source.mkdir(parents=True)
+    destination.mkdir(parents=True)
+    scripts.mkdir()
+    (source / "SKILL.md").write_text("canonical\n", encoding="utf-8")
+    (destination / "SKILL.md").write_text("stale\n", encoding="utf-8")
+    shutil.copy2(ROOT / "scripts" / "sync_codex_plugin_skill.py", scripts)
+
+    result = subprocess.run(
+        [sys.executable, "scripts/sync_codex_plugin_skill.py", "--check"],
+        cwd=temporary_root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode != 0
+    assert "content differs: SKILL.md" in result.stderr
 
 
 def test_public_links_and_license_exist() -> None:

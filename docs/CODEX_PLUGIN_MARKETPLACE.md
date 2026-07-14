@@ -22,7 +22,16 @@ python scripts/sync_codex_plugin_skill.py --check
 
 Clone the repository, keep the checked-out repository as the Codex workspace, and use the repo-local marketplace catalog at `.agents/plugins/marketplace.json`. The catalog points to `./plugins/revenue-kun`.
 
-At the time this package was prepared, the public OpenAI reference described repo-local and home-local marketplace JSON layouts, but did not publish a stable GitHub-URL install command or a public Directory submission form. Do not document an unverified command as supported.
+OpenAI's current Codex plugin CLI accepts a GitHub repository shorthand or a
+local marketplace root:
+
+```bash
+codex plugin marketplace add signal-yield/revenue-kun
+codex plugin add revenue-kun@signal-yield
+```
+
+For a local checkout, replace the GitHub shorthand with the repository root.
+After installation, start a new Codex session so the bundled Skill is detected.
 
 ### Home-local Marketplace
 
@@ -43,7 +52,14 @@ Copy the plugin directory to `~/plugins/revenue-kun` and merge the catalog entry
 }
 ```
 
-Availability of install, enable, disable, and uninstall UI controls depends on the Codex build in use.
+In Codex CLI, open `/plugins` to install or uninstall the plugin and press Space
+to disable or enable an installed plugin. The ChatGPT desktop plugin details
+page also exposes **Uninstall plugin** when the installation policy permits it.
+Remove the configured marketplace source with:
+
+```bash
+codex plugin marketplace remove signal-yield
+```
 
 ## Marketplace copy — 日本語
 
@@ -185,5 +201,8 @@ GitHub Issues: https://github.com/signal-yield/revenue-kun/issues
 - [x] OCR and scanned-PDF limitations are explicit.
 - [x] Appraisal and investment-advice disclaimers are explicit.
 - [ ] Add approved PNG icon/logo assets when OpenAI publishes binding icon dimensions and review requirements.
-- [ ] Confirm install/enable/disable/uninstall behavior in a Codex build that exposes Plugin Marketplace UI.
-- [ ] Confirm any future public Directory submission URL and reviewer fields from OpenAI before submission.
+- [ ] Confirm install/enable/disable/uninstall behavior in a compatible Codex CLI or desktop build.
+- [ ] Complete the public submission at https://platform.openai.com/plugins with
+      verified publisher identity, production logo, public support/privacy/terms
+      URLs, five positive tests, three negative tests, availability, release
+      notes, and policy attestations.
