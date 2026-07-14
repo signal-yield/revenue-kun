@@ -36,6 +36,8 @@
       "レントロールCSVから収益試算Excelを作成して",
       "テキスト抽出可能なレントロールPDFからdirect_cap.xlsxを作成して"
     ],
-    "brandColor": "#1F6FEB"
+    "brandColor": "#1F6FEB",
+    "composerIcon": "./assets/revenue-kun-icon.png",
+    "logo": "./assets/revenue-kun-logo.png"
   }
 }
