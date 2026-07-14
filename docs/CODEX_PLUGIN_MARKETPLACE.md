@@ -18,20 +18,27 @@ python scripts/sync_codex_plugin_skill.py --check
 
 ## Installation
 
+For the general user-facing install guide, use `docs/CODEX_PLUGIN_INSTALL.md`.
+This document remains the package and marketplace-maintainer note for the Codex
+Plugin bundle.
+
 ### Repository-local Marketplace
 
 Clone the repository, keep the checked-out repository as the Codex workspace, and use the repo-local marketplace catalog at `.agents/plugins/marketplace.json`. The catalog points to `./plugins/revenue-kun`.
 
-OpenAI's current Codex plugin CLI accepts a GitHub repository shorthand or a
-local marketplace root:
+OpenAI's current Codex manual documents GitHub repository shorthand and local
+marketplace roots for Marketplace registration:
 
 ```bash
 codex plugin marketplace add signal-yield/revenue-kun
-codex plugin add revenue-kun@signal-yield
+codex plugin marketplace add signal-yield/revenue-kun --ref main
+codex plugin marketplace add ./local-marketplace-root
 ```
 
 For a local checkout, replace the GitHub shorthand with the repository root.
-After installation, start a new Codex session so the bundled Skill is detected.
+After adding the Marketplace, open `/plugins`, choose the `signal-yield`
+Marketplace, install `revenue-kun`, and start a new Codex session so the
+bundled Skill is detected.
 
 ### Home-local Marketplace
 
@@ -55,6 +62,14 @@ Copy the plugin directory to `~/plugins/revenue-kun` and merge the catalog entry
 In Codex CLI, open `/plugins` to install or uninstall the plugin and press Space
 to disable or enable an installed plugin. The ChatGPT desktop plugin details
 page also exposes **Uninstall plugin** when the installation policy permits it.
+Inspect or refresh configured marketplaces with:
+
+```bash
+codex plugin marketplace list
+codex plugin marketplace upgrade
+codex plugin marketplace upgrade signal-yield
+```
+
 Remove the configured marketplace source with:
 
 ```bash

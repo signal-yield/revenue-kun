@@ -85,6 +85,53 @@ revenue-kun は、Claude Code と Codex の両方に向けたSkillを提供し�
 
 Claude CodeまたはCodex上で「revenue-kunを起動して」「Web UIを開いて」等と依頼すると、Local Web UIが起動します。起動先は `127.0.0.1` 上のローカル実行のみで、ホスティング型SaaSではありません。
 
+## Codex Plugin
+
+revenue-kunはCodex Pluginとして、repo-hosted Codex Marketplace経由で導入できます。OpenAI公式Directoryへの掲載状況とは独立して、`signal-yield/revenue-kun` リポジトリをMarketplaceとして登録して利用できます。
+
+インストールは2段階です。
+
+1. Marketplace登録
+2. Codexで `/plugins` を開き、`signal-yield` Marketplaceから `revenue-kun` をインストール
+
+```bash
+codex plugin marketplace add signal-yield/revenue-kun
+```
+
+その後、Codex CLIで `codex` を起動して `/plugins` を開き、`signal-yield` Marketplaceを選択し、`revenue-kun` をInstallしてください。
+
+公式manualでは、Marketplace登録は `codex plugin marketplace add owner/repo`、Marketplace一覧確認は `codex plugin marketplace list`、Marketplace削除は `codex plugin marketplace remove marketplace-name` と案内されています。Pluginのinstall、uninstall、enable、disableは、Codex CLIの `/plugins` 画面またはChatGPT DesktopのPlugins画面から操作できます。
+
+利用例:
+
+```text
+revenue-kunを起動して
+Web UIを開いて
+このレントロールCSVから収益試算Excelを作成して
+このテキスト抽出可能PDFからdirect_cap.xlsxを作成して
+```
+
+制約:
+
+- Local Web UIは `127.0.0.1` 限定で起動します。
+- hosted SaaSではありません。
+- 入力CSV/PDFをrevenue-kunが外部サービスへ送信することはありません。
+- OCR、スキャンPDF、スマートフォン撮影画像には対応していません。
+- 出力は「収益試算値」であり、不動産鑑定評価ではありません。
+- 投資判断、法律判断、税務判断は提供しません。
+
+管理:
+
+```bash
+codex plugin marketplace list
+codex plugin marketplace upgrade signal-yield
+codex plugin marketplace remove signal-yield
+```
+
+Pluginのdisable/enableは、Codex CLIで `codex` を起動して `/plugins` を開き、インストール済みPlugin上でSpaceキーを押して切り替えます。uninstallは同じPluginブラウザでPlugin詳細を開き、利用可能な場合に **Uninstall plugin** を選択します。
+
+詳しい導入手順とtroubleshootingは [docs/CODEX_PLUGIN_INSTALL.md](docs/CODEX_PLUGIN_INSTALL.md) を参照してください。
+
 ## ライセンス
 
 Apache License 2.0
