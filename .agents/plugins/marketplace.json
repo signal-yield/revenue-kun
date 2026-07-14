@@ -1,0 +1,20 @@
+{
+  "name": "revenue-kun-local",
+  "interface": {
+    "displayName": "revenue-kun Local"
+  },
+  "plugins": [
+    {
+      "name": "revenue-kun",
+      "source": {
+        "source": "local",
+        "path": "./plugins/revenue-kun"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

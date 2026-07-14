@@ -1,0 +1,37 @@
+{
+  "name": "revenue-kun",
+  "version": "0.5.2",
+  "description": "Run and validate the local revenue-kun workflow for inspectable direct-capitalization revenue estimates.",
+  "author": {
+    "name": "Signal Yield",
+    "url": "https://github.com/signal-yield"
+  },
+  "homepage": "https://signal-yield.github.io/revenue-kun/",
+  "repository": "https://github.com/signal-yield/revenue-kun",
+  "license": "Apache-2.0",
+  "keywords": [
+    "real-estate",
+    "rent-roll",
+    "spreadsheet",
+    "direct-capitalization"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "revenue-kun",
+    "shortDescription": "Local rent-roll extraction and revenue-estimate workbook workflow",
+    "longDescription": "Run and validate the local revenue-kun OSS workflow for CSV or text-based PDF rent rolls and generate an inspectable Excel workbook containing revenue estimates. OCR, scanned PDFs, photographed documents, appraisal, and investment, legal, or tax advice are outside its scope.",
+    "developerName": "Signal Yield",
+    "category": "Productivity",
+    "capabilities": [
+      "Local file processing",
+      "Spreadsheet generation"
+    ],
+    "websiteURL": "https://signal-yield.github.io/revenue-kun/",
+    "defaultPrompt": [
+      "revenue-kunのLocal Web UIを起動して",
+      "revenue-kunのサンプルを検証して",
+      "このレントロールを収益試算Excelへ変換する手順を確認して"
+    ],
+    "brandColor": "#176B5B"
+  }
+}
