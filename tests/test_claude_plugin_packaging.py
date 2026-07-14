@@ -239,14 +239,23 @@ def test_does_not_reuse_codex_plugin_root_directory():
 
 
 def test_codex_plugin_files_untouched_by_this_branch():
-    # These files belong to PR #100 and are not expected to exist on a branch
-    # created from main before that PR merges. If they do exist (e.g. this
-    # branch was later rebased on top of a merged PR #100), this test only
-    # asserts this branch does not overwrite them with Claude-Code-specific
-    # content; it does not require them to exist.
-    for path in (CODEX_PLUGIN_ROOT, CODEX_MARKETPLACE, CODEX_SYNC_SCRIPT, CODEX_TEST_FILE):
-        if path.exists():
-            assert "claude-plugins" not in path.read_text(encoding="utf-8", errors="ignore")
+    # These files/directories belong to PR #100. Once that PR merges into
+    # main and this branch is rebased, they exist alongside the Claude Code
+    # plugin. This test only asserts this branch does not leak
+    # Claude-Code-specific paths into Codex-owned files; it does not require
+    # them to exist, and it does not modify or re-sync them.
+    candidates: list[Path] = []
+    for entry in (CODEX_PLUGIN_ROOT, CODEX_MARKETPLACE, CODEX_SYNC_SCRIPT, CODEX_TEST_FILE):
+        if not entry.exists():
+            continue
+        if entry.is_dir():
+            candidates.extend(p for p in entry.rglob("*") if p.is_file())
+        else:
+            candidates.append(entry)
+
+    for path in candidates:
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        assert "claude-plugins" not in text, f"Claude Code plugin path leaked into Codex file: {path}"
 
 
 # ---------------------------------------------------------------------------
