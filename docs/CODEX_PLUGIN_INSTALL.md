@@ -1,8 +1,18 @@
 # revenue-kun Codex Plugin Install Guide
 
-This guide is for users who want to install the revenue-kun Codex Plugin from the repo-hosted Codex Marketplace in this GitHub repository.
+This guide covers two install paths: adding published revenue-kun v0.5.2 from the OpenAI Plugins Directory in ChatGPT, and installing it in Codex from this repository's repo-hosted Codex Marketplace.
 
-The OpenAI official Plugin Directory submission is separate from this repository distribution path. revenue-kun can be installed from this GitHub repository without waiting for official Directory listing, one-click Directory install, or verified publisher display.
+The public Directory listing and the GitHub repository Marketplace are separate distribution paths. General ChatGPT users can add the published plugin from the Directory; Codex users can register this repository as a Marketplace and install it from `/plugins`.
+
+## Add from ChatGPT
+
+1. Open **Plugins** in ChatGPT.
+2. Search for `revenue-kun`.
+3. Select the add (`+`) action for revenue-kun.
+
+Directory search: https://chatgpt.com/plugins?q=revenue
+
+The published listing is version `0.5.2`, with subtitle **Turn rent rolls into Excel** in the **Productivity** category.
 
 ## Supported Environment
 
@@ -141,7 +151,13 @@ codex plugin marketplace remove signal-yield
 
 ## Directory Listing vs GitHub Repository Distribution
 
-Currently available through this repository:
+Available from the OpenAI Plugins Directory:
+
+- Search for `revenue-kun` in ChatGPT Plugins.
+- Add published version `0.5.2` directly from the Directory listing.
+- Directory search: https://chatgpt.com/plugins?q=revenue
+
+Also available through this repository for Codex users:
 
 - Add the GitHub repository as a Codex Marketplace.
 - Install the `revenue-kun` Plugin.
@@ -149,13 +165,7 @@ Currently available through this repository:
 - Launch the Local Web UI.
 - Generate Excel workbooks from CSV or text-based PDFs.
 
-Separate from this repository distribution:
-
-- OpenAI official Plugin Directory listing.
-- One-click install from the public Directory search listing.
-- Verified publisher display in the official Directory.
-
-Do not describe the plugin as already listed in the OpenAI official Directory.
+These are complementary install paths. Adding from ChatGPT Plugins does not register the `signal-yield` repo-hosted Marketplace in Codex, and registering the Marketplace does not change the public Directory listing.
 
 ## Security and Privacy
 

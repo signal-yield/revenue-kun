@@ -1,8 +1,13 @@
 # revenue-kun Codex Plugin Directory Submission
 
-Last updated: 2026-07-14
+- Status: Published
+- Published version: 0.5.2
+- Directory URL: https://chatgpt.com/plugins?q=revenue
+- Published date: 2026-07-15
 
-This document is the copy-and-paste source for the OpenAI Plugin submission portal for the `revenue-kun` Codex Plugin. It covers the skills-only Codex Plugin package in `plugins/revenue-kun/` only. It does not cover Claude Code Marketplace submission.
+Last updated: 2026-07-15
+
+This document is retained as the submission-history and copy source for the OpenAI Plugin submission portal for the `revenue-kun` Codex Plugin. It covers the skills-only Codex Plugin package in `plugins/revenue-kun/` only. It does not cover Claude Code Marketplace submission.
 
 ## Official Submission Facts Confirmed
 
@@ -422,4 +427,3 @@ The official public docs require choosing countries or regions in the portal. Th
 - Choose final availability countries or regions from the portal's list.
 - Complete policy attestations.
 - Select Submit for Review.
-
