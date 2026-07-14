@@ -29,12 +29,12 @@
       "Write"
     ],
     "websiteURL": "https://signal-yield.github.io/revenue-kun/",
-    "privacyPolicyURL": "https://github.com/signal-yield/revenue-kun/blob/main/docs/CODEX_PLUGIN_MARKETPLACE.md#privacy-and-security",
-    "termsOfServiceURL": "https://github.com/signal-yield/revenue-kun/blob/main/docs/CODEX_PLUGIN_MARKETPLACE.md#disclaimer",
+    "privacyPolicyURL": "https://signal-yield.github.io/revenue-kun/privacy.html",
+    "termsOfServiceURL": "https://signal-yield.github.io/revenue-kun/terms.html",
     "defaultPrompt": [
       "revenue-kunを起動して",
-      "レントロールPDFから収益試算Excelを作成して",
-      "CSVからdirect_cap.xlsxを生成して"
+      "レントロールCSVから収益試算Excelを作成して",
+      "テキスト抽出可能なレントロールPDFからdirect_cap.xlsxを作成して"
     ],
     "brandColor": "#1F6FEB"
   }
