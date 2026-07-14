@@ -2,6 +2,11 @@
 
 ## Status
 
+revenue-kun v0.5.2 is published in the OpenAI Plugins Directory:
+https://chatgpt.com/plugins?q=revenue
+
+The repo-hosted `signal-yield` Codex Marketplace remains available as a separate distribution path for Codex users and maintainers.
+
 This repository packages the existing Codex Agent Skill as a repo-local Codex Plugin using the OpenAI-published structure available at implementation time:
 
 - Plugin manifest: `plugins/revenue-kun/.codex-plugin/plugin.json`

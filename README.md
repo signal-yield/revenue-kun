@@ -134,9 +134,19 @@ claude plugin marketplace remove signal-yield
 
 詳しい導入手順とtroubleshootingは [docs/CLAUDE_CODE_PLUGIN_INSTALL.md](docs/CLAUDE_CODE_PLUGIN_INSTALL.md) を参照してください。
 
+## OpenAI Plugins Directory
+
+revenue-kun v0.5.2はOpenAI Plugins Directoryで公開されています。ChatGPTの「プラグイン」画面で `revenue-kun` を検索し、一般ユーザーはDirectoryから追加できます。
+
+- Subtitle: Turn rent rolls into Excel
+- Category: Productivity
+- Directory: https://chatgpt.com/plugins?q=revenue
+
+Codex CLI利用者は、以下のrepo-hosted Codex Marketplace経由でも導入できます。Directoryからの追加と、リポジトリをMarketplaceとして登録する方法は別の導入経路です。
+
 ## Codex Plugin
 
-revenue-kunはCodex Pluginとして、repo-hosted Codex Marketplace経由で導入できます。OpenAI公式Directoryへの掲載状況とは独立して、`signal-yield/revenue-kun` リポジトリをMarketplaceとして登録して利用できます。
+revenue-kunはCodex Pluginとして、repo-hosted Codex Marketplace経由でも導入できます。`signal-yield/revenue-kun` リポジトリをMarketplaceとして登録して利用します。
 
 インストールは2段階です。
 

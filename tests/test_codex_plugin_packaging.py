@@ -224,16 +224,20 @@ def test_codex_marketplace_install_docs_are_user_ready() -> None:
         "income-estimation values",
         "not a real-estate appraisal",
         "does not send input files to external services",
+        "https://chatgpt.com/plugins?q=revenue",
+        "Turn rent rolls into Excel",
+        "Productivity",
+        "0.5.2",
     ]:
         assert required in combined
 
     forbidden_claims = [
-        "OpenAI公式Directoryに掲載済み",
-        "official Directory listing is available",
-        "verified publisher display is available",
         "codex plugin add revenue-kun@signal-yield",
         "OCR対応",
         "hosted SaaSとして提供",
+        "OpenAI推奨",
+        "OpenAI認定不動産鑑定ツール",
+        "OpenAIが精度を保証",
     ]
     for phrase in forbidden_claims:
         assert phrase not in combined
