@@ -1,7 +1,7 @@
 {
-  "name": "revenue-kun-local",
+  "name": "signal-yield",
   "interface": {
-    "displayName": "revenue-kun Local"
+    "displayName": "Signal Yield Advisory"
   },
   "plugins": [
     {

@@ -1,10 +1,10 @@
 {
   "name": "revenue-kun",
   "version": "0.5.2",
-  "description": "Run and validate the local revenue-kun workflow for inspectable direct-capitalization revenue estimates.",
+  "description": "An Apache-2.0 local-first OSS tool that converts rent-roll CSV or text-based PDF files into a direct-capitalization Excel workbook.",
   "author": {
-    "name": "Signal Yield",
-    "url": "https://github.com/signal-yield"
+    "name": "Signal Yield Advisory / Koichi Matsuda",
+    "url": "https://signal-yield.github.io/revenue-kun/"
   },
   "homepage": "https://signal-yield.github.io/revenue-kun/",
   "repository": "https://github.com/signal-yield/revenue-kun",
@@ -12,26 +12,30 @@
   "keywords": [
     "real-estate",
     "rent-roll",
-    "spreadsheet",
-    "direct-capitalization"
+    "direct-capitalization",
+    "excel",
+    "local-first",
+    "japan"
   ],
   "skills": "./skills/",
   "interface": {
-    "displayName": "revenue-kun",
-    "shortDescription": "Local rent-roll extraction and revenue-estimate workbook workflow",
-    "longDescription": "Run and validate the local revenue-kun OSS workflow for CSV or text-based PDF rent rolls and generate an inspectable Excel workbook containing revenue estimates. OCR, scanned PDFs, photographed documents, appraisal, and investment, legal, or tax advice are outside its scope.",
-    "developerName": "Signal Yield",
+    "displayName": "revenue-kun — Rent Roll to Direct Capitalization Excel",
+    "shortDescription": "Convert rent-roll CSV or text-based PDF files into an inspectable direct-capitalization Excel workbook.",
+    "longDescription": "revenue-kun is an Apache-2.0 local-first OSS tool for real-estate practitioners. It reads rent-roll CSV files or text-based PDFs, previews extracted rows, and creates a direct_cap.xlsx workbook containing OER, detailed-expense, and extracted-rent-roll sheets. It can also launch a Local Web UI bound only to 127.0.0.1. OCR, scanned PDFs, smartphone images, hosted SaaS, appraisal opinions, and investment, legal, or tax advice are outside scope.",
+    "developerName": "Signal Yield Advisory / Koichi Matsuda",
     "category": "Productivity",
     "capabilities": [
-      "Local file processing",
-      "Spreadsheet generation"
+      "Interactive",
+      "Write"
     ],
     "websiteURL": "https://signal-yield.github.io/revenue-kun/",
+    "privacyPolicyURL": "https://github.com/signal-yield/revenue-kun/blob/main/docs/CODEX_PLUGIN_MARKETPLACE.md#privacy-and-security",
+    "termsOfServiceURL": "https://github.com/signal-yield/revenue-kun/blob/main/docs/CODEX_PLUGIN_MARKETPLACE.md#disclaimer",
     "defaultPrompt": [
-      "revenue-kunのLocal Web UIを起動して",
-      "revenue-kunのサンプルを検証して",
-      "このレントロールを収益試算Excelへ変換する手順を確認して"
+      "revenue-kunを起動して",
+      "レントロールPDFから収益試算Excelを作成して",
+      "CSVからdirect_cap.xlsxを生成して"
     ],
-    "brandColor": "#176B5B"
+    "brandColor": "#1F6FEB"
   }
 }
