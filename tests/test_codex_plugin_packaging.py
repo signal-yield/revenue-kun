@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import shutil
+import struct
 import subprocess
 import sys
 from pathlib import Path
@@ -11,6 +12,7 @@ MANIFEST_PATH = ROOT / "plugins" / "revenue-kun" / ".codex-plugin" / "plugin.jso
 MARKETPLACE_PATH = ROOT / ".agents" / "plugins" / "marketplace.json"
 CANONICAL_SKILL = ROOT / ".agents" / "skills" / "revenue-kun" / "SKILL.md"
 PACKAGED_SKILL = ROOT / "plugins" / "revenue-kun" / "skills" / "revenue-kun" / "SKILL.md"
+PLUGIN_ROOT = ROOT / "plugins" / "revenue-kun"
 DOC_PATH = ROOT / "docs" / "CODEX_PLUGIN_MARKETPLACE.md"
 INSTALL_DOC_PATH = ROOT / "docs" / "CODEX_PLUGIN_INSTALL.md"
 SUBMISSION_DOC_PATH = ROOT / "docs" / "CODEX_DIRECTORY_SUBMISSION.md"
@@ -34,6 +36,24 @@ def test_manifest_required_fields_and_paths() -> None:
     assert manifest["license"] == "Apache-2.0"
     assert manifest["skills"] == "./skills/"
     assert PACKAGED_SKILL.exists()
+
+
+def test_manifest_icons_are_valid_square_pngs() -> None:
+    manifest = load_json(MANIFEST_PATH)
+    interface = manifest["interface"]
+
+    for field in ("composerIcon", "logo"):
+        relative_path = interface[field]
+        assert relative_path.startswith("./assets/")
+        asset_path = PLUGIN_ROOT / relative_path.removeprefix("./")
+        assert asset_path.is_file()
+
+        data = asset_path.read_bytes()
+        assert data[:8] == b"\x89PNG\r\n\x1a\n"
+        width, height, bit_depth, color_type = struct.unpack(">IIBB", data[16:26])
+        assert width == height == 512
+        assert bit_depth == 8
+        assert color_type in (2, 6)  # RGB or RGBA
 
 
 def test_version_is_consistent() -> None:
