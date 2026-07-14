@@ -21,6 +21,9 @@ venv/
 .agents/skills/*
 !.agents/skills/revenue-kun/
 !.agents/skills/revenue-kun/**
+!.agents/plugins/
+.agents/plugins/*
+!.agents/plugins/marketplace.json
 skills-lock.json
 pr_body.md
 
