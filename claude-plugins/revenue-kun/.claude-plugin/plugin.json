@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "revenue-kun",
+  "displayName": "revenue-kun — Rent Roll to Direct Capitalization Excel",
+  "version": "0.5.2",
+  "description": "レントロールPDF／CSVから、直接還元法による収益試算Excelを生成する不動産実務向けOSS。",
+  "author": {
+    "name": "Signal Yield Advisory (Koichi Matsuda)",
+    "url": "https://signal-yield.github.io/revenue-kun/"
+  },
+  "homepage": "https://signal-yield.github.io/revenue-kun/",
+  "repository": "https://github.com/signal-yield/revenue-kun",
+  "license": "Apache-2.0",
+  "keywords": [
+    "real-estate",
+    "rent-roll",
+    "direct-capitalization",
+    "excel",
+    "local-first",
+    "japan"
+  ]
+}
