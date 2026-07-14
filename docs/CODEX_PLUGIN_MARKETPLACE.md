@@ -110,7 +110,10 @@ revenue-kunは、不動産実務で利用するレントロールをCSVまたは
 
 ### サポート窓口
 
+Support page: https://signal-yield.github.io/revenue-kun/support.html
 GitHub Issues: https://github.com/signal-yield/revenue-kun/issues
+Privacy Policy: https://signal-yield.github.io/revenue-kun/privacy.html
+Terms of Service: https://signal-yield.github.io/revenue-kun/terms.html
 
 ### category／tags候補
 
@@ -166,7 +169,10 @@ revenue-kun is a local-first open-source tool for real-estate practitioners. It 
 
 ### Support
 
+Support page: https://signal-yield.github.io/revenue-kun/support.html
 GitHub Issues: https://github.com/signal-yield/revenue-kun/issues
+Privacy Policy: https://signal-yield.github.io/revenue-kun/privacy.html
+Terms of Service: https://signal-yield.github.io/revenue-kun/terms.html
 
 ### Suggested category and tags
 
@@ -200,8 +206,9 @@ GitHub Issues: https://github.com/signal-yield/revenue-kun/issues
 - [x] Local-only and non-SaaS scope is explicit.
 - [x] OCR and scanned-PDF limitations are explicit.
 - [x] Appraisal and investment-advice disclaimers are explicit.
-- [ ] Add approved PNG icon/logo assets when OpenAI publishes binding icon dimensions and review requirements.
-- [ ] Confirm install/enable/disable/uninstall behavior in a compatible Codex CLI or desktop build.
+- [x] Public Privacy Policy, Terms of Service, and Support URLs are prepared for GitHub Pages.
+- [ ] Upload or approve a production logo in the OpenAI submission portal if required.
+- [ ] Confirm install/enable/disable/uninstall behavior in a compatible Codex CLI or desktop build. Current local Codex CLI validation is blocked by a WindowsApps access-denied error.
 - [ ] Complete the public submission at https://platform.openai.com/plugins with
       verified publisher identity, production logo, public support/privacy/terms
       URLs, five positive tests, three negative tests, availability, release

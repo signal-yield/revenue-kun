@@ -12,6 +12,10 @@ MARKETPLACE_PATH = ROOT / ".agents" / "plugins" / "marketplace.json"
 CANONICAL_SKILL = ROOT / ".agents" / "skills" / "revenue-kun" / "SKILL.md"
 PACKAGED_SKILL = ROOT / "plugins" / "revenue-kun" / "skills" / "revenue-kun" / "SKILL.md"
 DOC_PATH = ROOT / "docs" / "CODEX_PLUGIN_MARKETPLACE.md"
+SUBMISSION_DOC_PATH = ROOT / "docs" / "CODEX_DIRECTORY_SUBMISSION.md"
+PRIVACY_PATH = ROOT / "docs" / "privacy.html"
+TERMS_PATH = ROOT / "docs" / "terms.html"
+SUPPORT_PATH = ROOT / "docs" / "support.html"
 
 
 def load_json(path: Path) -> dict:
@@ -100,7 +104,13 @@ def test_public_links_and_license_exist() -> None:
     assert (ROOT / "README.md").exists()
     assert (ROOT / "LICENSE").exists()
     assert DOC_PATH.exists()
+    assert SUBMISSION_DOC_PATH.exists()
+    assert PRIVACY_PATH.exists()
+    assert TERMS_PATH.exists()
+    assert SUPPORT_PATH.exists()
     assert manifest["homepage"] in (ROOT / "README.md").read_text(encoding="utf-8")
+    assert manifest["interface"]["privacyPolicyURL"] == "https://signal-yield.github.io/revenue-kun/privacy.html"
+    assert manifest["interface"]["termsOfServiceURL"] == "https://signal-yield.github.io/revenue-kun/terms.html"
 
 
 def test_guardrail_language() -> None:
@@ -126,6 +136,46 @@ def test_guardrail_language() -> None:
     ]
     for phrase in forbidden_positive_claims:
         assert phrase not in public_copy
+
+
+def test_directory_submission_materials_are_complete() -> None:
+    text = SUBMISSION_DOC_PATH.read_text(encoding="utf-8")
+    assert text.count("### Positive Test ") == 5
+    assert text.count("### Negative Test ") == 3
+    for required in [
+        "https://platform.openai.com/plugins",
+        "https://signal-yield.github.io/revenue-kun/privacy.html",
+        "https://signal-yield.github.io/revenue-kun/terms.html",
+        "https://signal-yield.github.io/revenue-kun/support.html",
+        "Submit for Review",
+        "Apps Management",
+        "verified developer or business identity",
+        "127.0.0.1",
+        "OCR",
+        "scanned PDFs",
+        "hosted SaaS",
+        "income-estimation values",
+    ]:
+        assert required in text
+
+
+def test_public_support_page_has_required_submission_guidance() -> None:
+    text = SUPPORT_PATH.read_text(encoding="utf-8")
+    for required in [
+        "Bug Reports",
+        "Security Issues",
+        "Support Scope",
+        "synthetic or safely redacted data",
+        "Do not post security-sensitive details",
+        "127.0.0.1",
+        "OCR",
+        "hosted SaaS",
+        "real-estate appraisal",
+        "privacy.html",
+        "terms.html",
+        "https://github.com/signal-yield/revenue-kun/issues",
+    ]:
+        assert required in text
 
 
 def test_no_private_property_artifacts_are_packaged() -> None:
