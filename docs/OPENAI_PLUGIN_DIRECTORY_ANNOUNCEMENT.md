@@ -1,6 +1,7 @@
 # OpenAI Plugins Directory publication announcement
 
 Directory: https://chatgpt.com/plugins?q=revenue
+Published: 2026-07-15
 
 ## GitHub Release
 
