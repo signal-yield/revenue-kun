@@ -17,7 +17,7 @@ Claude Code's official Marketplace (`claude-plugins-official`) and the community
 
 ## What This Installs
 
-- Marketplace name: `signal-yield`
+- Marketplace name: `revenue-kun`
 - Plugin name: `revenue-kun`
 - Plugin package: `claude-plugins/revenue-kun/`
 - Marketplace catalog: `.claude-plugin/marketplace.json`
@@ -46,13 +46,13 @@ claude plugin marketplace add signal-yield/revenue-kun@main
 ## 2. Install the Plugin
 
 ```bash
-claude plugin install revenue-kun@signal-yield
+claude plugin install revenue-kun@revenue-kun
 ```
 
 ## 3. Confirm with Plugin Details
 
 ```bash
-claude plugin details revenue-kun@signal-yield
+claude plugin details revenue-kun@revenue-kun
 ```
 
 Confirm that:
@@ -106,25 +106,25 @@ The same `direct_cap.xlsx` output is generated from a text-based (non-scanned) r
 ## Disable
 
 ```bash
-claude plugin disable revenue-kun@signal-yield
+claude plugin disable revenue-kun@revenue-kun
 ```
 
 ## Enable
 
 ```bash
-claude plugin enable revenue-kun@signal-yield
+claude plugin enable revenue-kun@revenue-kun
 ```
 
 ## Uninstall
 
 ```bash
-claude plugin uninstall revenue-kun@signal-yield
+claude plugin uninstall revenue-kun@revenue-kun
 ```
 
 ## Remove the Marketplace
 
 ```bash
-claude plugin marketplace remove signal-yield
+claude plugin marketplace remove revenue-kun
 ```
 
 Removing the marketplace also uninstalls any plugin you installed from it.
@@ -141,15 +141,15 @@ Removing the marketplace also uninstalls any plugin you installed from it.
 
 - Confirm you have network access to GitHub and the repository is reachable.
 - Confirm the repository name is `signal-yield/revenue-kun`.
-- Confirm the marketplace name is `signal-yield` — check with `claude plugin marketplace list`.
-- If a marketplace with the same name is already registered from a different source, remove it first with `claude plugin marketplace remove signal-yield`, then re-add.
+- Confirm the marketplace name is `revenue-kun` — check with `claude plugin marketplace list`.
+- If a marketplace with the same name is already registered from a different source, remove it first with `claude plugin marketplace remove revenue-kun`, then re-add.
 
 ### Installing the Plugin fails
 
 - Confirm the marketplace is registered: `claude plugin marketplace list`.
 - Confirm the plugin name is `revenue-kun`.
-- Confirm the install target is exactly `revenue-kun@signal-yield`.
-- Run `claude plugin details revenue-kun@signal-yield` to check whether it is already installed.
+- Confirm the install target is exactly `revenue-kun@revenue-kun`.
+- Run `claude plugin details revenue-kun@revenue-kun` to check whether it is already installed.
 
 ### The Web UI does not start
 
@@ -170,7 +170,7 @@ Removing the marketplace also uninstalls any plugin you installed from it.
 ### The Marketplace remains after removing the Plugin
 
 ```bash
-claude plugin marketplace remove signal-yield
+claude plugin marketplace remove revenue-kun
 ```
 
 ## Claude Code Official Marketplace vs. This Repository

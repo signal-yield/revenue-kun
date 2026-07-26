@@ -14,7 +14,7 @@ INDEX_HTML = ROOT / "docs" / "index.html"
 INSTALL_GUIDE = ROOT / "docs" / "CLAUDE_CODE_PLUGIN_INSTALL.md"
 
 MARKETPLACE_ADD_CMD = "claude plugin marketplace add signal-yield/revenue-kun"
-PLUGIN_INSTALL_CMD = "claude plugin install revenue-kun@signal-yield"
+PLUGIN_INSTALL_CMD = "claude plugin install revenue-kun@revenue-kun"
 
 # The Codex Plugin's own install command, which must not be touched by this work.
 CODEX_MARKETPLACE_ADD_CMD = "codex plugin marketplace add signal-yield/revenue-kun"
@@ -37,11 +37,11 @@ def test_readme_contains_marketplace_add_and_install_commands():
 
 def test_readme_contains_management_commands():
     text = _read(README)
-    assert "claude plugin details revenue-kun@signal-yield" in text
-    assert "claude plugin disable revenue-kun@signal-yield" in text
-    assert "claude plugin enable revenue-kun@signal-yield" in text
-    assert "claude plugin uninstall revenue-kun@signal-yield" in text
-    assert "claude plugin marketplace remove signal-yield" in text
+    assert "claude plugin details revenue-kun@revenue-kun" in text
+    assert "claude plugin disable revenue-kun@revenue-kun" in text
+    assert "claude plugin enable revenue-kun@revenue-kun" in text
+    assert "claude plugin uninstall revenue-kun@revenue-kun" in text
+    assert "claude plugin marketplace remove revenue-kun" in text
 
 
 def test_readme_links_to_install_guide():

@@ -68,27 +68,27 @@ The output of this tool is a revenue estimate (収益試算値), not an appraise
 ## Installation
 ```
 /plugin marketplace add signal-yield/revenue-kun
-/plugin install revenue-kun@signal-yield
+/plugin install revenue-kun@revenue-kun
 ```
 
 ## Enable
 ```
-/plugin enable revenue-kun@signal-yield
+/plugin enable revenue-kun@revenue-kun
 ```
 
 ## Disable
 ```
-/plugin disable revenue-kun@signal-yield
+/plugin disable revenue-kun@revenue-kun
 ```
 
 ## Uninstall
 ```
-/plugin uninstall revenue-kun@signal-yield
+/plugin uninstall revenue-kun@revenue-kun
 ```
 
 ## Remove the marketplace
 ```
-/plugin marketplace remove signal-yield
+/plugin marketplace remove revenue-kun
 ```
 
 ## Support
