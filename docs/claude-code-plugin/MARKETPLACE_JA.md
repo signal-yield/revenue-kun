@@ -68,27 +68,27 @@ Claude Code向けSkillとして、「revenue-kunを起動して」「Web UIを�
 ## インストール
 ```
 /plugin marketplace add signal-yield/revenue-kun
-/plugin install revenue-kun@signal-yield
+/plugin install revenue-kun@revenue-kun
 ```
 
 ## enable方法
 ```
-/plugin enable revenue-kun@signal-yield
+/plugin enable revenue-kun@revenue-kun
 ```
 
 ## disable方法
 ```
-/plugin disable revenue-kun@signal-yield
+/plugin disable revenue-kun@revenue-kun
 ```
 
 ## uninstall方法
 ```
-/plugin uninstall revenue-kun@signal-yield
+/plugin uninstall revenue-kun@revenue-kun
 ```
 
 ## Marketplace削除方法
 ```
-/plugin marketplace remove signal-yield
+/plugin marketplace remove revenue-kun
 ```
 
 ## サポート窓口

@@ -96,13 +96,13 @@ revenue-kunはClaude Code Pluginとして、GitHubリポジトリ経由のClaude
 
 ```bash
 claude plugin marketplace add signal-yield/revenue-kun
-claude plugin install revenue-kun@signal-yield
+claude plugin install revenue-kun@revenue-kun
 ```
 
 インストール後、Skillが検出されていることを確認できます。
 
 ```bash
-claude plugin details revenue-kun@signal-yield
+claude plugin details revenue-kun@revenue-kun
 ```
 
 利用例:
@@ -126,10 +126,10 @@ revenue-kunのWeb UIを開いて
 管理コマンド:
 
 ```bash
-claude plugin disable revenue-kun@signal-yield
-claude plugin enable revenue-kun@signal-yield
-claude plugin uninstall revenue-kun@signal-yield
-claude plugin marketplace remove signal-yield
+claude plugin disable revenue-kun@revenue-kun
+claude plugin enable revenue-kun@revenue-kun
+claude plugin uninstall revenue-kun@revenue-kun
+claude plugin marketplace remove revenue-kun
 ```
 
 詳しい導入手順とtroubleshootingは [docs/CLAUDE_CODE_PLUGIN_INSTALL.md](docs/CLAUDE_CODE_PLUGIN_INSTALL.md) を参照してください。

@@ -30,28 +30,28 @@ Pluginパッケージには、私有物件PDF・実物件CSV・生成物Excel等
 
 ```
 /plugin marketplace add signal-yield/revenue-kun
-/plugin install revenue-kun@signal-yield
+/plugin install revenue-kun@revenue-kun
 ```
 
 ローカルディレクトリからのテスト:
 
 ```
 /plugin marketplace add ./
-/plugin install revenue-kun@signal-yield
+/plugin install revenue-kun@revenue-kun
 ```
 
 ## 有効化・無効化・アンインストール
 
 ```
-/plugin enable revenue-kun@signal-yield
-/plugin disable revenue-kun@signal-yield
-/plugin uninstall revenue-kun@signal-yield
+/plugin enable revenue-kun@revenue-kun
+/plugin disable revenue-kun@revenue-kun
+/plugin uninstall revenue-kun@revenue-kun
 ```
 
 Marketplaceごと削除する場合:
 
 ```
-/plugin marketplace remove signal-yield
+/plugin marketplace remove revenue-kun
 ```
 
 ## Validation
